@@ -139,7 +139,6 @@
       gap: 5px;
       z-index: 3;
     }
-
     /* Chat history styling (only shows chat messages) */
     #chatHistory {
       max-height: 80px;
@@ -196,7 +195,6 @@
       font-weight: bold;
       text-align: center;
     }
-
     /* Hide the chat prompt when the container is expanded */
     #heygen-streaming-embed.expand #chatPrompt {
       display: none;
@@ -244,11 +242,12 @@
   <div id="overlay">
     <!-- Chat History: shows only chat messages -->
     <div id="chatHistory" style="display:none;"></div>
-    <!-- Talk Section with Toggle, Text Field, and Talk Button -->
+    <!-- Talk Section with Toggle, Text Field, Talk Button, and Microphone Button -->
     <div id="talk-section">
       <button id="toggleChatBtn">Zie de chat</button>
       <input id="taskInput" type="text" placeholder="Je vraag of bericht ...">
       <button id="talkBtn">Stuur</button>
+      <button id="micBtn">🎤</button>
     </div>
   </div>
 </div>

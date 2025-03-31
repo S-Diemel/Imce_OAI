@@ -7,6 +7,7 @@ const fallbackImage = document.getElementById("fallbackImage");
 const startSessionBtn = document.getElementById("startSessionBtn");
 const taskInput = document.getElementById("taskInput");
 const chatHistory = document.getElementById("chatHistory");
+const micBtn = document.getElementById("micBtn"); // Make sure this exists in your HTML
 
 // Runtime state variables used during an active session
 let sessionInfo = null;
@@ -15,6 +16,9 @@ let mediaStream = null;
 let webSocket = null;
 let sessionToken = null;
 let partialMessage = "";
+
+// For speech recognition
+let recognition;
 
 // Configuration constants for the avatar and API
 const AVATAR_ID = "2fe7e0bc976c4ea1adaff91afb0c68ec";
@@ -35,14 +39,18 @@ function updateChatHistory(message) {
   chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
-// Shows or hides the fallback image and media element based on session state
+/**
+ * Shows or hides the fallback image and media element based on session state.
+ */
 function updateFallbackImage() {
   const isActive = Boolean(sessionInfo);
   fallbackImage.style.display = isActive ? 'none' : 'block';
   mediaElement.style.display = isActive ? 'block' : 'none';
 }
 
-// Displays the "Start" button only if the container is expanded and no session is active
+/**
+ * Displays the "Start" button only if the container is expanded and no session is active.
+ */
 function updateStartButton() {
   const shouldShow = streamingEmbed.classList.contains('expand') && !sessionInfo;
   startSessionBtn.style.display = shouldShow ? 'block' : 'none';
@@ -200,7 +208,7 @@ async function connectWebSocket(sessionId) {
     session_id: sessionId,
     session_token: sessionToken,
     silence_response: false,
-    opening_text: "Hallo, waar kan ik je mee helpen?",
+    opening_text: "Hallo, hoe kan ik je helpen?",
     stt_language: "nl",
   });
 
@@ -222,7 +230,7 @@ async function connectWebSocket(sessionId) {
  * @param {string} text - The user's input message to send.
  * @param {string} taskType - The type of task (e.g., "talk", "command", etc.).
  */
-async function sendText(text, taskType = "talk") {
+async function sendText(text, taskType = "repeat") {
   if (!sessionInfo) return console.error("No active session");
 
   const sanitized = text.replace(/[😀-🛿]/gu, '').substring(0, 200).trim();
@@ -264,7 +272,7 @@ async function sendText(text, taskType = "talk") {
 // ===================== SESSION CLEANUP =====================
 
 /**
- * Gracefully shuts down the session and resets app state
+ * Gracefully shuts down the session and resets app state.
  */
 async function closeSession() {
   if (!sessionInfo) return console.error("No active session");
@@ -295,6 +303,46 @@ async function closeSession() {
   } catch (err) {
     console.error("Error closing session", err);
   }
+}
+
+// ===================== MICROPHONE INPUT =====================
+
+/**
+ * Initializes speech recognition using the Web Speech API.
+ */
+function initSpeechRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert("Speech Recognition is not supported in your browser.");
+    if (micBtn) {
+      micBtn.disabled = true;
+      micBtn.title = "Speech recognition not supported in this browser";
+    }
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = "nl-NL"; // Dutch language to match avatar language
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onstart = () => {
+    updateChatHistory("🎤 Luisteren...");
+  };
+
+  recognition.onresult = (event) => {
+    const spokenText = event.results[0][0].transcript;
+    sendText(spokenText, "repeat");
+  };
+
+  recognition.onerror = (event) => {
+    console.error("Speech recognition error:", event.error);
+    updateChatHistory(`❌ Fout bij spraakherkenning: ${event.error}`);
+  };
+
+  recognition.onend = () => {
+    console.log("Speech recognition ended");
+  };
 }
 
 // ===================== EVENT LISTENERS =====================
@@ -336,7 +384,7 @@ function initEventListeners() {
     const text = taskInput.value.trim();
     if (text) {
       if (!streamingEmbed.classList.contains('expand')) resetInactivityTimer();
-      sendText(text, "talk");
+      sendText(text, "repeat");
       taskInput.value = "";
     }
   });
@@ -354,6 +402,14 @@ function initEventListeners() {
     e.stopPropagation();
     chatHistory.style.display = (chatHistory.style.display === "none" || chatHistory.style.display === "") ? "block" : "none";
   });
+
+  // Handles clicks on the mic button to start speech recognition
+  if (micBtn) {
+    micBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (recognition) recognition.start();
+    });
+  }
 }
 
 // ===================== INITIALIZATION =====================
@@ -362,3 +418,4 @@ function initEventListeners() {
 updateFallbackImage();
 updateStartButton();
 initEventListeners();
+initSpeechRecognition();

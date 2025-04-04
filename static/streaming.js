@@ -20,6 +20,7 @@ let partialMessage = "";
 // For speech recognition
 let recognition;
 
+const apikeyoai ="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"
 // Configuration constants for the avatar and API
 const AVATAR_ID = "2fe7e0bc976c4ea1adaff91afb0c68ec";
 const API_CONFIG = {
@@ -221,6 +222,46 @@ async function connectWebSocket(sessionId) {
   });
 }
 
+/**
+ * Calls the ChatGPT API with the provided text and updates the chat history with the response.
+ *
+ * @param {string} text - The user's input text.
+ */
+async function callChatGPT(text) {
+  const apiUrl = "https://api.openai.com/v1/responses";
+  const payload = {model: "gpt-4o",
+                   tools: [{
+                       type: "file_search",
+                       vector_store_ids: ["vs_67a493b70a088191b24ee25d9e103f6d"],
+                       max_num_results: 2}],
+                   input: text
+                   };
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + apikeyoai,
+      },
+      body: JSON.stringify(payload),
+    });
+
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      updateChatHistory(`Error: ${errorText}`);
+      return;
+    }
+
+    const data = await response.json();
+    const outputText = data.output[1].content[0].text;
+    console.log(outputText)
+    return outputText;
+  } catch (err) {
+    updateChatHistory(`Error: ${err.message}`);
+  }
+}
 // ===================== COMMUNICATION =====================
 
 /**
@@ -232,8 +273,9 @@ async function connectWebSocket(sessionId) {
  */
 async function sendText(text, taskType = "repeat") {
   if (!sessionInfo) return console.error("No active session");
-
-  const sanitized = text.replace(/[😀-🛿]/gu, '').substring(0, 200).trim();
+  const text_OAI = await callChatGPT(text);
+  console.log(text_OAI);
+  const sanitized = text_OAI.replace(/[😀-🛿]/gu, '').substring(0, 200).trim();
   if (!sanitized) return console.warn("Attempted to send empty or invalid text. Ignoring.");
 
   const payload = {
@@ -322,17 +364,37 @@ function initSpeechRecognition() {
   }
 
   recognition = new SpeechRecognition();
+  recognition.continuous = true; // Keeps listening until we decide to stop
+  recognition.interimResults = true; // Enables interim results to monitor speech
   recognition.lang = "nl-NL"; // Dutch language to match avatar language
-  recognition.interimResults = false;
   recognition.maxAlternatives = 1;
+
+  let finalTranscript = "";
+  let silenceTimer;
+  const silenceDelay = 2000; // 2 seconds of silence to trigger stopping
+
+  // Reset the silence timer whenever new speech is detected
+  const resetSilenceTimer = () => {
+    if (silenceTimer) clearTimeout(silenceTimer);
+    silenceTimer = setTimeout(() => {
+      recognition.stop();
+    }, silenceDelay);
+  };
 
   recognition.onstart = () => {
     updateChatHistory("🎤 Luisteren...");
+    finalTranscript = ""; // Reset transcript at the start
+    resetSilenceTimer();
   };
 
   recognition.onresult = (event) => {
-    const spokenText = event.results[0][0].transcript;
-    sendText(spokenText, "repeat");
+    // Process each result from the current event
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) {
+        finalTranscript += event.results[i][0].transcript + " ";
+      }
+    }
+    resetSilenceTimer();
   };
 
   recognition.onerror = (event) => {
@@ -342,8 +404,13 @@ function initSpeechRecognition() {
 
   recognition.onend = () => {
     console.log("Speech recognition ended");
-  };
+    // Only send the text once the recognition has fully stopped
+    if (finalTranscript.trim()) {
+      sendText(finalTranscript.trim(), "repeat");
+    }
+  }
 }
+
 
 // ===================== EVENT LISTENERS =====================
 

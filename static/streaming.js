@@ -21,7 +21,6 @@ let context = [];
 // For speech recognition
 let recognition;
 
-const apikeyoai ="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"
 // Configuration constants for the avatar and API
 const AVATAR_ID = "2fe7e0bc976c4ea1adaff91afb0c68ec";
 const API_CONFIG = {
@@ -80,7 +79,7 @@ function resetInactivityTimer() {
  */
 async function getSessionToken() {
   try {
-    const response = await fetch("/api/get-token", { method: "POST" });
+    const response = await fetch("/api/heygen/get-token", { method: "POST" });
     if (!response.ok) throw new Error("Token request failed");
     const data = await response.json();
     if (!data?.data?.token) throw new Error("No token returned from backend");
@@ -210,6 +209,7 @@ async function connectWebSocket(sessionId) {
  */
 
 async function callChatGPT(text) {
+
   console.log(previous_response)
   const imce_instructions = "Je naam is Imke. Je bent een MBO-docent in opleiding en ambassadeur voor het MIEC-data-initiatief. Je richt je op docenten, studenten en bedrijven die willen samenwerken aan datagedreven vraagstukken. Je bent een toegankelijke, empathische en deskundige gids die complexe onderwerpen begrijpelijk maakt. Verder ben je ook een vriendelijke gesprekspartner.\n\n" +
                             "Je hebt de volgende eigenschappen:\n\n" +
@@ -235,16 +235,15 @@ async function callChatGPT(text) {
                    previous_response_id: undefined
                    };
 
+
   try {
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + apikeyoai,
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     });
-
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -253,14 +252,18 @@ async function callChatGPT(text) {
     }
 
     const data = await response.json();
+
     const outputText = data.output[data.output.length - 1].content[0].text;
     previous_response = data.id
     context.push({role:'assistant', content: outputText})
+
     return outputText;
+
   } catch (err) {
     updateChatHistory(`Error: ${err.message}`);
   }
 }
+
 // ===================== COMMUNICATION =====================
 
 /**

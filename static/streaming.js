@@ -20,7 +20,6 @@ let partialMessage = "";
 // For speech recognition
 let recognition;
 
-const apikeyoai ="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"
 // Configuration constants for the avatar and API
 const AVATAR_ID = "2fe7e0bc976c4ea1adaff91afb0c68ec";
 const API_CONFIG = {
@@ -79,7 +78,7 @@ function resetInactivityTimer() {
  */
 async function getSessionToken() {
   try {
-    const response = await fetch("/api/get-token", { method: "POST" });
+    const response = await fetch("/api/heygen/get-token", { method: "POST" });
     if (!response.ok) throw new Error("Token request failed");
     const data = await response.json();
     if (!data?.data?.token) throw new Error("No token returned from backend");
@@ -228,25 +227,27 @@ async function connectWebSocket(sessionId) {
  * @param {string} text - The user's input text.
  */
 async function callChatGPT(text) {
-  const apiUrl = "https://api.openai.com/v1/responses";
-  const payload = {model: "gpt-4o",
-                   tools: [{
-                       type: "file_search",
-                       vector_store_ids: ["vs_67a493b70a088191b24ee25d9e103f6d"],
-                       max_num_results: 2}],
-                   input: text
-                   };
+  const apiUrl = "/api/openai/chat"; // Call your Flask backend instead of OpenAI directly
+  const payload = {
+    model: "gpt-4o",
+    tools: [
+      {
+        type: "file_search",
+        vector_store_ids: ["vs_67a493b70a088191b24ee25d9e103f6d"],
+        max_num_results: 2
+      }
+    ],
+    input: text
+  };
 
   try {
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + apikeyoai,
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     });
-
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -255,13 +256,17 @@ async function callChatGPT(text) {
     }
 
     const data = await response.json();
+
+    // Assuming you're accessing GPT's message from this structure
     const outputText = data.output[1].content[0].text;
-    console.log(outputText)
+    console.log(outputText);
     return outputText;
+
   } catch (err) {
     updateChatHistory(`Error: ${err.message}`);
   }
 }
+
 // ===================== COMMUNICATION =====================
 
 /**

@@ -45,33 +45,63 @@ def authenticate_with_heygen():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/openai/chat", methods=["POST"])
-def get_openai_token():
+@app.route('/api/openai/response', methods=['POST'])
+def chat_with_openai():
 
-    # Creating a Session token
-    # https://platform.openai.com/docs/api-reference/responses/create?lang=curl
+    user_input = request.json.get('text')
 
-    url = "https://api.openai.com/v1/responses"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {OPENAI_API_KEY}"
+    imce_instructions = (
+        """
+        Je naam is Imke. Je bent een MBO-docent in opleiding en ambassadeur voor het MIEC-data-initiatief.
+        Je richt je op docenten, studenten en bedrijven die willen samenwerken aan datagedreven vraagstukken.
+        Je bent een toegankelijke, empathische en deskundige gids die complexe onderwerpen begrijpelijk maakt.
+        Verder ben je ook een vriendelijke gesprekspartner.
+        
+        Je hebt de volgende eigenschappen:
+        
+        Rol: MBO-docent in opleiding en die gericht is op het verbinden van onderwijs en praktijk
+        Kennisniveau: Basiskennis van data en AI, aangevuld met expertise over hybride leeromgevingen, vaardighedenontwikkeling badges
+        en het bevorderen van innovatie via MIEC-data
+        Interactie: Vriendelijk, open en ondersteunend. Je communiceert helder, biedt praktische voorbeelden en past je toon aan het kennisniveau
+        van je gesprekspartner aan
+        Focus: Het uitleggen van MIEC-data, het begeleiden van samenwerkingsprocessen, het motiveren van studenten en het stimuleren van probleemoplossend denken
+        
+        Gebruik concrete voorbeelden, stel vragen om duidelijkheid te krijgen en bied oplossingen die aansluiten bij de behoeften van de gebruiker.
+        Als je iets niet zeker weet, geef dit eerlijk aan en stel voor om samen te zoeken naar het antwoord.
+        
+        Antwoord in 3 of minder zinnen en altijd in het Nederlands ongeacht de taal van de gebruiker.
+        Benoem niet dat er bestanden zijn geüpload en dat je daar je informatie vandaan haalt.
+        """
+    )
+
+    payload = {
+        "model": "gpt-4o-mini-2024-07-18",
+        "tools": [{
+            "type": "file_search",
+            "vector_store_ids": ["vs_67a493b70a088191b24ee25d9e103f6d"],
+            "max_num_results": 2
+        }],
+        "input": user_input,
+        "instructions": imce_instructions
     }
 
-    # Send the POST request to Heygen's API to create a new session token
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    openai_url = "https://api.openai.com/v1/responses"
+
     try:
+        response = requests.post(openai_url, headers=headers, json=payload)
+        response.raise_for_status()
 
-        # Read the JSON data sent from the frontend (like the user's message or query)
-        payload = request.get_json()
+        data = response.json()
+        output_text = data['output'][-1]['content'][0]['text']
 
-        # Send the POST request to OpenAI with both headers and user input
-        response = requests.post(url, headers=headers, json=payload)
+        return jsonify({"response": output_text})
 
-        # Return the JSON response from OpenAI to your frontend, along with status code
-        return jsonify(response.json()), response.status_code
-
-    except Exception as e:
-
-        # Catch any errors (network, bad payload, etc.) and return a 500 error with message
+    except requests.RequestException as e:
         return jsonify({"error": str(e)}), 500
 
 

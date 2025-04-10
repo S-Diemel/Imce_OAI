@@ -209,41 +209,15 @@ async function connectWebSocket(sessionId) {
  */
 
 async function callChatGPT(text) {
-
-  console.log(previous_response)
-  const imce_instructions = "Je naam is Imke. Je bent een MBO-docent in opleiding en ambassadeur voor het MIEC-data-initiatief. Je richt je op docenten, studenten en bedrijven die willen samenwerken aan datagedreven vraagstukken. Je bent een toegankelijke, empathische en deskundige gids die complexe onderwerpen begrijpelijk maakt. Verder ben je ook een vriendelijke gesprekspartner.\n\n" +
-                            "Je hebt de volgende eigenschappen:\n\n" +
-                            "Rol: MBO-docent in opleiding en die gericht is op het verbinden van onderwijs en praktijk\n" +
-                            "Kennisniveau: Basiskennis van data en AI, aangevuld met expertise over hybride leeromgevingen, vaardighedenontwikkeling badges en het bevorderen van innovatie via MIEC-data\n" +
-                            "Interactie: Vriendelijk, open en ondersteunend. Je communiceert helder, biedt praktische voorbeelden en past je toon aan het kennisniveau van je gesprekspartner aan\n" +
-                            "Focus: Het uitleggen van MIEC-data, het begeleiden van samenwerkingsprocessen, het motiveren van studenten en het stimuleren van probleemoplossend denken\n\n" +
-                            "Gebruik concrete voorbeelden, stel vragen om duidelijkheid te krijgen en bied oplossingen die aansluiten bij de behoeften van de gebruiker. Als je iets niet zeker weet, geef dit eerlijk aan en stel voor om samen te zoeken naar het antwoord.\n\n" +
-                            "Antwoord in 3 of minder zinnen en altijd in het Nederlands ongeacht de taal van de gebruiker. benoem niet dat er bestanden zijn geupload en dat je daar je informatie vandaan haalt.";
-
-
-
-  const apiUrl = "https://api.openai.com/v1/responses";
   context.push({role:'user', content: text})
-  const input_context = context.slice(-10);
-  const payload = {model: "gpt-4o-mini-2024-07-18",
-                   tools: [{
-                       type: "file_search",
-                       vector_store_ids: ["vs_67a493b70a088191b24ee25d9e103f6d"],
-                       max_num_results: 2}],
-                   input: input_context,
-                   instructions: imce_instructions,
-                   previous_response_id: undefined
-                   };
-
-
+  const input_context = context.slice(-3);
+  console.log(input_context.length)
   try {
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
+    const response = await fetch("/api/openai/response", { method: "POST",
+                                                           headers: {'Content-Type': 'application/json'},
+                                                           body: JSON.stringify({ text: input_context })
+                                                         }
+     );
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -253,8 +227,7 @@ async function callChatGPT(text) {
 
     const data = await response.json();
 
-    const outputText = data.output[data.output.length - 1].content[0].text;
-    previous_response = data.id
+    const outputText = data.response;
     context.push({role:'assistant', content: outputText})
 
     return outputText;
@@ -469,7 +442,9 @@ function initEventListeners() {
   // Toggles chat history visibility on button click
   document.querySelector("#toggleChatBtn").addEventListener("click", (e) => {
     e.stopPropagation();
-    chatHistory.style.display = (chatHistory.style.display === "none" || chatHistory.style.display === "") ? "block" : "none";
+    const isHidden = chatHistory.style.display === "none" || chatHistory.style.display === "";
+      chatHistory.style.display = isHidden ? "block" : "none";
+      e.target.textContent = isHidden ? "Verberg chat" : "Zie de chat";
   });
 
   // Handles clicks on the mic button to start speech recognition

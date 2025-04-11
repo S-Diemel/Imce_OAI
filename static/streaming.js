@@ -18,6 +18,7 @@ let sessionToken = null;
 let partialMessage = "";
 let previous_response = undefined
 let context = [];
+let heygenIsSpeaking = false;
 // For speech recognition
 let recognition;
 
@@ -34,10 +35,26 @@ const API_CONFIG = {
  *
  * @param {string} message - The message string to display in the chat log.
  */
-function updateChatHistory(message) {
-  const timestamp = new Date().toLocaleTimeString();
-  chatHistory.innerHTML += `[${timestamp}] ${message}<br>`;
+ function markdownToHTML(text) {
+   // Convert **bold** to <strong>
+   text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+   // Replace newlines with <br>
+   text = text.replace(/\n/g, '<br>');
+   // Ensure it ends with a <br>
+     if (!text.endsWith('<br>')) {
+       text += '<br>';
+     }
+   return text;
+ }
+
+function updateChatHistory(message, user) {
+  if (user){
+     chatHistory.innerHTML += `<div class="chat-message">${markdownToHTML(message)}</div>`;
+     chatHistory.scrollTop = chatHistory.scrollHeight;
+  } else {
+  chatHistory.innerHTML += markdownToHTML(message);
   chatHistory.scrollTop = chatHistory.scrollHeight;
+  }
 }
 
 /**
@@ -126,6 +143,25 @@ async function createNewSession() {
       videoCaptureDefaults: { resolution: LivekitClient.VideoPresets.h720.resolution },
     });
 
+    // Handle incoming messages from the avatar
+    room.on(LivekitClient.RoomEvent.DataReceived, (rawMessage) => {
+      try {
+        const textData = new TextDecoder().decode(rawMessage);
+        const eventData = JSON.parse(textData);
+        if (eventData.type === "avatar_stop_talking") {
+          // Turn on mic
+          document.querySelector("#talkBtn").disabled = false;
+          heygenIsSpeaking = false;
+
+        }
+
+      } catch (err) {
+        console.error("Error parsing incoming data:", err);
+        document.querySelector("#talkBtn").disabled = false;
+        heygenIsSpeaking = false;
+      }
+    });
+
     // Prepare an empty media stream and add tracks when available
     mediaStream = new MediaStream();
 
@@ -147,7 +183,6 @@ async function createNewSession() {
     });
 
     await room.prepareConnection(sessionInfo.url, sessionInfo.access_token);
-    await connectWebSocket(sessionInfo.session_id);
     console.log("Session created successfully");
   } catch (err) {
     console.error("Error creating new session", err);
@@ -180,29 +215,6 @@ async function startStreamingSession() {
 }
 
 /**
- * Opens a WebSocket connection to Heygen for real-time chat interaction.
- *
- * @param {string} sessionId - The session ID to bind the WebSocket to.
- */
-async function connectWebSocket(sessionId) {
-  const params = new URLSearchParams({
-    session_id: sessionId,
-    session_token: sessionToken,
-    silence_response: false,
-    opening_text: "Hallo, hoe kan ik je helpen?",
-    stt_language: "nl",
-  });
-
-  const wsUrl = `wss://${new URL(API_CONFIG.serverUrl).hostname}/v1/ws/streaming.chat?${params.toString()}`;
-  webSocket = new WebSocket(wsUrl);
-
-  webSocket.addEventListener("message", (event) => {
-    const eventData = JSON.parse(event.data);
-    console.log("Raw WebSocket event:", eventData);
-  });
-}
-
-/**
  * Calls the ChatGPT API with the provided text and updates the chat history with the response.
  *
  * @param {string} text - The user's input text.
@@ -221,7 +233,7 @@ async function callChatGPT(text) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      updateChatHistory(`Error: ${errorText}`);
+      updateChatHistory(`Error: ${errorText}`, false);
       return;
     }
 
@@ -233,10 +245,21 @@ async function callChatGPT(text) {
     return outputText;
 
   } catch (err) {
-    updateChatHistory(`Error: ${err.message}`);
+    updateChatHistory(`Error: ${err.message}`, false);
   }
 }
 
+function formatGPTOutput(text) {
+  const stepRegex = /(\d+\.\s\*\*[^\*]+\*\*):\s*/g;
+
+  // Add a newline between title and description
+  const withNewlines = text.replace(stepRegex, "\n$1\n");
+
+  // Optional: Add extra newlines between steps
+  const formatted = withNewlines.replace(/(\n\d+\.\s\*\*[^\*]+\*\*\n)/g, "\n$1");
+
+  return formatted.trim();
+}
 // ===================== COMMUNICATION =====================
 
 /**
@@ -248,11 +271,24 @@ async function callChatGPT(text) {
  */
 async function sendText(text, taskType = "repeat") {
   if (!sessionInfo) return console.error("No active session");
-  updateChatHistory(`You: ${text}`);
+  if (heygenIsSpeaking) {
+        return;
+      }
+  document.querySelector("#talkBtn").disabled = true;
+
+  updateChatHistory(`${text}`, true);
   const text_OAI = await callChatGPT(text);
   console.log(text_OAI);
   const sanitized = text_OAI.replace(/[😀-🛿]/gu, '').substring(0, 10000).trim();
-  if (!sanitized) return console.warn("Attempted to send empty or invalid text. Ignoring.");
+  if (!sanitized) {
+      console.warn("Attempted to send empty or invalid text. Ignoring.");
+      // Re-enable the talk button if disabled due to blocking state
+      document.querySelector("#talkBtn").disabled = false;
+      return;
+    }
+
+    // Set the flag indicating Heygen is now busy speaking
+    heygenIsSpeaking = true;
 
   const payload = {
     session_id: sessionInfo.session_id,
@@ -277,14 +313,25 @@ async function sendText(text, taskType = "repeat") {
       if (response.status === 500) {
         console.warn("Retrying once after 500 error...");
         await new Promise(res => setTimeout(res, 1000));
+        document.querySelector("#talkBtn").disabled = false;
         return sendText(text, taskType);
       }
     }
-  updateChatHistory(`Imce: ${sanitized}`);
-  } catch (err) {
-    console.error("Error sending text", err);
+  updateChatHistory(`${sanitized}`, false);
+
+//  // After 3 seconds, re-enable mic and allow speaking again
+//      setTimeout(() => {
+//        document.querySelector("#talkBtn").disabled = false;
+//        heygenIsSpeaking = false;
+//      }, 3000);
+
+    } catch (err) {
+      console.error("Error sending text", err);
+      // Ensure UI is not stuck if there's an error
+      document.querySelector("#talkBtn").disabled = false;
+      heygenIsSpeaking = false;
+    }
   }
-}
 
 // ===================== SESSION CLEANUP =====================
 
@@ -357,7 +404,6 @@ function initSpeechRecognition() {
   };
 
   recognition.onstart = () => {
-    updateChatHistory("🎤 Luisteren...");
     finalTranscript = ""; // Reset transcript at the start
     resetSilenceTimer();
   };
@@ -374,7 +420,7 @@ function initSpeechRecognition() {
 
   recognition.onerror = (event) => {
     console.error("Speech recognition error:", event.error);
-    updateChatHistory(`Fout bij spraakherkenning: ${event.error}`);
+    updateChatHistory(`Fout bij spraakherkenning: ${event.error}`, false);
   };
 
   recognition.onend = () => {
@@ -440,12 +486,12 @@ function initEventListeners() {
   });
 
   // Toggles chat history visibility on button click
-  document.querySelector("#toggleChatBtn").addEventListener("click", (e) => {
-    e.stopPropagation();
-    const isHidden = chatHistory.style.display === "none" || chatHistory.style.display === "";
-      chatHistory.style.display = isHidden ? "block" : "none";
-      e.target.textContent = isHidden ? "Verberg chat" : "Zie de chat";
-  });
+//  document.querySelector("#toggleChatBtn").addEventListener("click", (e) => {
+//    e.stopPropagation();
+//    const isHidden = chatHistory.style.display === "none" || chatHistory.style.display === "";
+//      chatHistory.style.display = isHidden ? "block" : "none";
+//      e.target.textContent = isHidden ? "Verberg chat" : "Zie de chat";
+//  });
 
   // Handles clicks on the mic button to start speech recognition
   if (micBtn) {

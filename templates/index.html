@@ -74,10 +74,17 @@
     }
     /* Expanded state: container is larger and rectangular */
     #heygen-streaming-embed.expand {
-      width: 480px;
-      height: 300px;
+      width: 33vw;
+      height: calc(100vh - 10px);
       border-radius: 8px;
-      border: none;
+      border: 5px;
+      top: 5px;
+      right: 0;
+      bottom: 5px;
+      left: auto;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
     /* Hide overlay when not expanded */
     #heygen-streaming-embed:not(.expand) #overlay {
@@ -86,9 +93,9 @@
     /* Video element fills the container */
     #mediaElement {
       width: 100%;
-      height: 100%;
+      height: 35%;
       object-fit: cover;
-      position: absolute;
+      position: relative;
       top: 0;
       left: 0;
       display: block;
@@ -96,11 +103,11 @@
     }
     /* Fallback image styling */
     #fallbackImage {
-      position: absolute;
+      position: relative;
       top: 0;
       left: 0;
       width: 100%;
-      height: 100%;
+      height: 35%;
       object-fit: cover;
       z-index: 2;
       /* Always visible when no session is active */
@@ -125,11 +132,13 @@
       border: none;         /* remove border */
       box-shadow: none;
     }
-    /* Overlay for controls */
+    /* Overlay for chat and controls */
     #overlay {
       position: absolute;
       bottom: 0;
       width: 100%;
+      /* Define a fixed or relative height for the overlay if needed */
+      height: 65%; /* This is an example value; adjust as desired */
       background: rgba(0, 0, 0, 0.5);
       color: #fff;
       padding: 5px;
@@ -139,15 +148,33 @@
       gap: 5px;
       z-index: 3;
     }
-    /* Chat history styling (only shows chat messages) */
+
+     /* Chat history styling: always visible and flexible */
     #chatHistory {
-      max-height: 80px;
+      flex: 1;
       overflow-y: auto;
       font-size: 0.8rem;
-      background: rgba(0, 0, 0, 0.7);
+      background: white;
       padding: 5px;
       border-radius: 4px;
+      color: black;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
     }
+    /* New chat bubble styling for user messages */
+    .chat-message {
+      max-width: 70%;
+      padding: 10px 15px;
+      margin: 5px;
+      border-radius: 15px;
+      background-color: #d50060;
+      color: #fff;
+      align-self: flex-end;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+
     /* Talk section controls */
     #talk-section {
       display: flex;
@@ -229,11 +256,11 @@
 </footer>
 
 <!-- Streaming Container (Avatar) -->
-<div id="heygen-streaming-embed">
+<div id="heygen-streaming-embed" class="expand">
   <!-- Chat prompt overlay for minimized state -->
   <div id="chatPrompt">Klik hier om te chatten</div>
   <!-- Fallback image is always shown when no session is active -->
-  <img id="fallbackImage" src="{{ url_for('static', filename='imcepicture.jpg') }}" alt="Avatar fallback">
+  <img id="fallbackImage" src="{{ url_for('static', filename='preview_target.webp') }}" alt="Avatar fallback">
   <!-- The video element fills the container (hidden until session starts) -->
   <video id="mediaElement" autoplay playsinline style="display: none;"></video>
   <!-- Start button shown when expanded and no session is active -->
@@ -241,10 +268,9 @@
   <!-- Overlay for chat and controls -->
   <div id="overlay">
     <!-- Chat History: shows only chat messages -->
-    <div id="chatHistory" style="display:none;"></div>
+    <div id="chatHistory"></div>
     <!-- Talk Section with Toggle, Text Field, Talk Button, and Microphone Button -->
     <div id="talk-section">
-      <button id="toggleChatBtn">Zie de chat</button>
       <input id="taskInput" type="text" placeholder="Je vraag of bericht ...">
       <button id="talkBtn">Stuur</button>
       <button id="micBtn">🎤</button>

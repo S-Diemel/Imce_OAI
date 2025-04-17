@@ -100,6 +100,13 @@
       left: 0;
       display: block;
       z-index: 1;
+      border: 5px solid #d50060;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      box-sizing: border-box;
+
     }
     /* Fallback image styling */
     #fallbackImage {
@@ -112,6 +119,13 @@
       z-index: 2;
       /* Always visible when no session is active */
       display: block;
+      border: 5px solid #d50060;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      box-sizing: border-box;
+
     }
     /* Start button (only in expanded mode when no session is active) */
     #startSessionBtn {
@@ -131,6 +145,7 @@
       text-align: center;
       border: none;         /* remove border */
       box-shadow: none;
+      font-family: 'Inter', sans‑serif;
     }
     /* Overlay for chat and controls */
     #overlay {
@@ -139,7 +154,7 @@
       width: 100%;
       /* Define a fixed or relative height for the overlay if needed */
       height: 65%; /* This is an example value; adjust as desired */
-      background: rgba(0, 0, 0, 0.5);
+      background: #d50060;
       color: #fff;
       padding: 5px;
       box-sizing: border-box;
@@ -153,7 +168,7 @@
     #chatHistory {
       flex: 1;
       overflow-y: auto;
-      font-size: 0.8rem;
+      font-size: 1rem;
       background: white;
       padding: 5px;
       border-radius: 4px;
@@ -161,6 +176,7 @@
       display: flex;
       flex-direction: column;
       gap: 5px;
+      font-family: 'Inter', sans‑serif;
     }
     /* New chat bubble styling for user messages */
     .chat-message {
@@ -187,6 +203,7 @@
       margin-right: 5px;
       font-size: 0.9rem;
       font-weight: bold;
+      font-family: 'Inter', sans‑serif;
     }
     #talk-section input {
       flex-grow: 1;
@@ -194,10 +211,11 @@
       color: #000;
     }
     #talk-section button {
-      background-color: #d50060;
-      color: #fff;
+      background-color: #FFB6C1;
+      color: black;
       cursor: pointer;
       font-weight: bold;
+      font-family: 'Inter', sans‑serif;
     }
     /* Toggle chat history button style */
     #toggleChatBtn {
@@ -205,6 +223,7 @@
       color: #fff;
       cursor: pointer;
       font-weight: bold;
+      font-family: 'Inter', sans‑serif;
     }
     /* Chat prompt styling: visible only in minimized mode */
     #chatPrompt {
@@ -221,10 +240,40 @@
       z-index: 10;
       font-weight: bold;
       text-align: center;
+      font-family: 'Inter', sans‑serif;
     }
     /* Hide the chat prompt when the container is expanded */
     #heygen-streaming-embed.expand #chatPrompt {
       display: none;
+    }
+    /* 1) Hide everything when minimized & no session */
+    #heygen-streaming-embed:not(.expand) > * {
+      display: none !important;
+    }
+
+    /* 2) Show & stretch only the fallback image */
+    #heygen-streaming-embed:not(.expand):not(.session-active) > #fallbackImage {
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      border: none !important;
+      border-radius: inherit !important;
+    }
+
+    /* 3) Keep the chat prompt visible when minimized */
+    #heygen-streaming-embed:not(.expand):not(.session-active) > #chatPrompt {
+      display: block !important;
+    }
+
+    /* 4) Minimized & session-active: show ONLY the mediaElement, filling the circle */
+    #heygen-streaming-embed:not(.expand).session-active > #mediaElement {
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      border: none !important;
+      border-radius: inherit !important;
     }
   </style>
   <!-- Include LiveKit Client Library -->
@@ -244,7 +293,7 @@
 
 <!-- Main Content -->
 <main>
-  <h1>Voorbeeld pagina om te chatten met Imceooo</h1>
+  <h1>Voorbeeld pagina om te chatten met Imce</h1>
   <p>
     Welkom op onze website! Hier kun je kennismaken met onze interactieve avatar Imce. Imce staat voor je klaar om je te helpen en vragen te beantwoorden. Begin een gesprek en ontdek hoe Imce jouw ervaring persoonlijker maakt.
   </p>

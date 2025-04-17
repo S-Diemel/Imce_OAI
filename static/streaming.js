@@ -220,9 +220,11 @@ async function startStreamingSession() {
     await room.connect(sessionInfo.url, sessionInfo.access_token);
     updateFallbackImage();
     console.log("Streaming started successfully");
+    streamingEmbed.classList.add('session-active');
   } catch (err) {
     console.error("Error starting streaming session", err);
   }
+
 }
 
 /**
@@ -233,7 +235,7 @@ async function startStreamingSession() {
 
 async function callChatGPT(text) {
   context.push({role:'user', content: text})
-  const input_context = context.slice(-3);
+  const input_context = context.slice(-6);
   console.log(input_context.length)
   try {
     const response = await fetch("/api/openai/response", { method: "POST",
@@ -377,6 +379,7 @@ async function closeSession() {
     updateFallbackImage();
     updateStartButton();
     console.log("Session closed");
+    streamingEmbed.classList.remove('session-active');
   } catch (err) {
     console.error("Error closing session", err);
   }

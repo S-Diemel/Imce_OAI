@@ -12,7 +12,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index_OAI.html")
 
 
 @app.route("/api/heygen/get-token", methods=["POST"])

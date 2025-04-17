@@ -71,10 +71,21 @@ function updateFallbackImage() {
  */
 function updateStartButton() {
   const shouldShow = streamingEmbed.classList.contains('expand') && !sessionInfo;
-  startSessionBtn.style.display = shouldShow ? 'block' : 'none';
-  startSessionBtn.disabled = !shouldShow;
-  startSessionBtn.innerHTML = shouldShow ? 'Start' : '';
+
+  if (shouldShow) {
+    // Show it…
+    startSessionBtn.style.display = 'block';
+    startSessionBtn.disabled    = false;
+    startSessionBtn.textContent = 'Start';
+
+  } else {
+    // Hide it
+    startSessionBtn.style.display = 'none';
+    startSessionBtn.disabled    = true;
+    startSessionBtn.textContent = '';
+  }
 }
+
 
 // ===================== INACTIVITY TIMER =====================
 
@@ -359,6 +370,8 @@ async function closeSession() {
     room = null;
     mediaStream = null;
     sessionToken = null;
+    heygenIsSpeaking=false;
+    document.querySelector("#talkBtn").disabled = false;
     clearTimeout(inactivityTimer);
 
     updateFallbackImage();

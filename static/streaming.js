@@ -23,7 +23,7 @@ let heygenIsSpeaking = false;
 let recognition;
 
 // Configuration constants for the avatar and API
-const AVATAR_ID = "2fe7e0bc976c4ea1adaff91afb0c68ec";
+const AVATAR_ID = "3b8a02792ccb4d52b7758f97bd133f05";
 const API_CONFIG = {
   serverUrl: "https://api.heygen.com",
 };
@@ -162,6 +162,7 @@ async function createNewSession() {
         if (eventData.type === "avatar_stop_talking") {
           // Turn on mic
           document.querySelector("#talkBtn").disabled = false;
+          micBtn.disabled = false;
           heygenIsSpeaking = false;
 
         }
@@ -169,6 +170,7 @@ async function createNewSession() {
       } catch (err) {
         console.error("Error parsing incoming data:", err);
         document.querySelector("#talkBtn").disabled = false;
+        micBtn.disabled = false;
         heygenIsSpeaking = false;
       }
     });
@@ -235,7 +237,7 @@ async function startStreamingSession() {
 
 async function callChatGPT(text) {
   context.push({role:'user', content: text})
-  const input_context = context.slice(-6);
+  const input_context = context.slice(-5);
   console.log(input_context.length)
   try {
     const response = await fetch("/api/openai/response", { method: "POST",
@@ -288,6 +290,7 @@ async function sendText(text, taskType = "repeat") {
         return;
       }
   document.querySelector("#talkBtn").disabled = true;
+  micBtn.disabled = true;
 
   updateChatHistory(`${text}`, true);
   const text_OAI = await callChatGPT(text);
@@ -297,6 +300,7 @@ async function sendText(text, taskType = "repeat") {
       console.warn("Attempted to send empty or invalid text. Ignoring.");
       // Re-enable the talk button if disabled due to blocking state
       document.querySelector("#talkBtn").disabled = false;
+      micBtn.disabled = false;
       return;
     }
 
@@ -327,21 +331,17 @@ async function sendText(text, taskType = "repeat") {
         console.warn("Retrying once after 500 error...");
         await new Promise(res => setTimeout(res, 1000));
         document.querySelector("#talkBtn").disabled = false;
+        micBtn.disabled = false;
         return sendText(text, taskType);
       }
     }
   updateChatHistory(`${sanitized}`, false);
 
-//  // After 3 seconds, re-enable mic and allow speaking again
-//      setTimeout(() => {
-//        document.querySelector("#talkBtn").disabled = false;
-//        heygenIsSpeaking = false;
-//      }, 3000);
-
     } catch (err) {
       console.error("Error sending text", err);
       // Ensure UI is not stuck if there's an error
       document.querySelector("#talkBtn").disabled = false;
+      micBtn.disabled = false;
       heygenIsSpeaking = false;
     }
   }
@@ -374,6 +374,7 @@ async function closeSession() {
     sessionToken = null;
     heygenIsSpeaking=false;
     document.querySelector("#talkBtn").disabled = false;
+    micBtn.disabled = false;
     clearTimeout(inactivityTimer);
 
     updateFallbackImage();
@@ -406,6 +407,7 @@ function initSpeechRecognition() {
   recognition.interimResults = true; // Enables interim results to monitor speech
   recognition.lang = "nl-NL"; // Dutch language to match avatar language
   recognition.maxAlternatives = 1;
+  const micBtn = document.getElementById("micBtn");
 
   let finalTranscript = "";
   let silenceTimer;
@@ -422,6 +424,7 @@ function initSpeechRecognition() {
   recognition.onstart = () => {
     finalTranscript = ""; // Reset transcript at the start
     resetSilenceTimer();
+    micBtn.classList.add("recording");
   };
 
   recognition.onresult = (event) => {
@@ -437,10 +440,12 @@ function initSpeechRecognition() {
   recognition.onerror = (event) => {
     console.error("Speech recognition error:", event.error);
     updateChatHistory(`Fout bij spraakherkenning: ${event.error}`, false);
+    micBtn.classList.remove("recording");
   };
 
   recognition.onend = () => {
     console.log("Speech recognition ended");
+    micBtn.classList.remove("recording");
     // Only send the text once the recognition has fully stopped
     if (finalTranscript.trim()) {
       sendText(finalTranscript.trim(), "repeat");

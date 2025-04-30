@@ -301,6 +301,7 @@ async function sendText(text, taskType = "repeat") {
       // Re-enable the talk button if disabled due to blocking state
       document.querySelector("#talkBtn").disabled = false;
       micBtn.disabled = false;
+      heygenIsSpeaking = false;
       return;
     }
 
@@ -332,6 +333,7 @@ async function sendText(text, taskType = "repeat") {
         await new Promise(res => setTimeout(res, 1000));
         document.querySelector("#talkBtn").disabled = false;
         micBtn.disabled = false;
+        heygenIsSpeaking = false;
         return sendText(text, taskType);
       }
     }
@@ -475,13 +477,14 @@ function initEventListeners() {
     e.stopPropagation();
     if (!sessionInfo) {
       startSessionBtn.disabled = true;
-      startSessionBtn.innerHTML = 'Loading...';
+      startSessionBtn.classList.add('loading');
       try {
         await createNewSession();
         await startStreamingSession();
       } catch (error) {
         console.error("Error starting session:", error);
       } finally {
+        startSessionBtn.classList.remove('loading');
         updateStartButton();
       }
     }

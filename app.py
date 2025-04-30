@@ -71,6 +71,7 @@ def chat_with_openai():
         
         Antwoord in 3 of minder zinnen en altijd in het Nederlands ongeacht de taal van de gebruiker.
         Benoem niet dat er bestanden zijn geüpload en dat je daar je informatie vandaan haalt.
+        Gebruik altijd de vector_store voor je antwoord wanneer mogelijk
         """
     )
 

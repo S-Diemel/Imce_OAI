@@ -92,6 +92,7 @@
       top: 5px;                                        /* 5px from the top */
       left: calc(100vw - 33vw - 5px);
       overflow: hidden;
+      cursor: default;
     }
     /* Hide overlay when not expanded */
     #heygen-streaming-embed:not(.expand) #overlay {
@@ -141,7 +142,7 @@
     /* Start button (only in expanded mode when no session is active) */
     #startSessionBtn {
       position: absolute;
-      top: 20%;
+      top: 15%;
       left: 50%;
       transform: translateX(-50%);
       font-size: 1rem;
@@ -159,23 +160,26 @@
     }
     .loader {
       display: none;
-      border: 16px solid #f3f3f3;    /* Light grey */
-      border-top: 16px solid #d50060;/* Blue */
+      border: 7px solid #f3f3f3;    /* Light grey */
+      border-top: 7px solid #d50060;/* Blue */
       border-radius: 50%;
-      width: 60px;
-      height: 60px;
+      width: 50px;
+      height: 50px;
       animation: spin 2s linear infinite;
       position: absolute;            /* so it sits on top of the video/avatar */
-      top: 12%;
-      left: 40%;
-      transform: translate(-50%, -50%);
+      top: 18%;
+      left: 50%;
       z-index: 100;
     }
 
-    /* 2) keyframes */
+    /* now include the translation + the rotation in every frame */
     @keyframes spin {
-      0%   { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      from {
+        transform: translate(-50%, -50%) rotate(0deg);
+      }
+      to {
+        transform: translate(-50%, -50%) rotate(360deg);
+      }
     }
 
     /* 3) when the button has “loading”, hide the button… */
@@ -187,6 +191,28 @@
 
     /* 4) …and show the loader right after it in the DOM */
     #startSessionBtn.loading ~ .loader {
+      display: block;
+    }
+    /* Minimize button base */
+    #minimizeBtn {
+      display: none;            /* hide by default */
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 3rem;
+      line-height: 1;
+      cursor: pointer;
+      z-index: 200;
+      text-shadow:
+        0 0 7px black;
+      background: transparent;
+    }
+
+    /* Show only when expanded */
+    #heygen-streaming-embed.expand #minimizeBtn {
       display: block;
     }
     /* Overlay for chat and controls */
@@ -390,6 +416,7 @@
   <video id="mediaElement" autoplay playsinline style="display: none;"></video>
   <!-- Start button shown when expanded and no session is active -->
   <button id="startSessionBtn">Start</button>
+  <button id="minimizeBtn" title="Minimize">×</button>
   <div class="loader"></div>
   <!-- Overlay for chat and controls -->
   <div id="overlay">
@@ -406,9 +433,7 @@
           <path d="M18,24c3.9,0,7-3.1,7-7V9c0-3.9-3.1-7-7-7s-7,3.1-7,7v8C11,20.9,14.1,24,18,24z" class="clr-i-solid clr-i-solid-path-1"></path>
           <path d="M30,17h-2c0,5.5-4.5,10-10,10S8,22.5,8,17H6c0,6.3,4.8,11.4,11,11.9V32h-3c-0.6,0-1,0.4-1,1s0.4,1,1,1h8c0.6,0,1-0.4,1-1
 		s-0.4-1-1-1h-3v-3.1C25.2,28.4,30,23.3,30,17z" class="clr-i-solid clr-i-solid-path-2"></path>
-
         </svg>
-
         <!-- recording solid mic (white) -->
         <svg id="recIcon" width="800px" height="800px" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
           <path d="M3 10L3 14M7.5 6L7.5 18M12 3V21M16.5 6V18M21 10V14" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>

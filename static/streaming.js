@@ -7,7 +7,9 @@ const fallbackImage = document.getElementById("fallbackImage");
 const startSessionBtn = document.getElementById("startSessionBtn");
 const taskInput = document.getElementById("taskInput");
 const chatHistory = document.getElementById("chatHistory");
-const micBtn = document.getElementById("micBtn"); // Make sure this exists in your HTML
+const micBtn = document.getElementById("micBtn");
+const minimizeBtn = document.getElementById('minimizeBtn');
+// Make sure this exists in your HTML
 
 // Runtime state variables used during an active session
 let sessionInfo = null;
@@ -465,10 +467,12 @@ function initEventListeners() {
   // Handles clicks on the streaming container to expand/collapse and manage UI visibility
   streamingEmbed.addEventListener('click', (e) => {
     if (!e.target.closest('button') && !e.target.closest('input')) {
-      streamingEmbed.classList.toggle('expand');
-      streamingEmbed.classList.contains('expand') ? clearTimeout(inactivityTimer) : resetInactivityTimer();
-      updateFallbackImage();
-      updateStartButton();
+      if (!streamingEmbed.classList.contains('expand')) {
+        streamingEmbed.classList.add('expand');
+        clearTimeout(inactivityTimer);
+        updateFallbackImage();
+        updateStartButton();
+      }
     }
   });
 
@@ -489,6 +493,15 @@ function initEventListeners() {
       }
     }
   });
+  // Minimize the avatar when the ‘×’ is clicked
+  minimizeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();                          // don’t re-fire the container’s click
+    streamingEmbed.classList.remove('expand');    // collapse it
+    resetInactivityTimer();                   // stop any pending auto-close
+    updateFallbackImage();
+    updateStartButton();
+  });
+
 
   // Handles the talk button click: sends text and restarts inactivity timer
   document.querySelector("#talkBtn").addEventListener("click", (e) => {

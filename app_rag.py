@@ -8,7 +8,7 @@ app = Flask(__name__)
 load_dotenv()
 HEYGEN_API_KEY = os.getenv("HEYGEN_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
+vector_store_id = "vs_67a493b70a088191b24ee25d9e103f6d"
 
 @app.route("/")
 def index():
@@ -44,6 +44,9 @@ def authenticate_with_heygen():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+def vector_store_search():
+    return False
+
 
 @app.route('/api/openai/response', methods=['POST'])
 def custom_openai_rag():
@@ -73,11 +76,6 @@ def custom_openai_rag():
 
     payload = {
         "model": "gpt-4o-mini-2024-07-18",
-        "tools": [{
-            "type": "file_search",
-            "vector_store_ids": ["vs_67a493b70a088191b24ee25d9e103f6d"],
-            "max_num_results": 2
-        }],
         "input": user_input,
         "instructions": imce_instructions
     }
@@ -87,7 +85,7 @@ def custom_openai_rag():
         "Content-Type": "application/json"
     }
 
-    openai_url = "https://api.openai.com/v1/chat/completions"
+    openai_url = "https://api.openai.com/v1/responses"
 
     try:
         response = requests.post(openai_url, headers=headers, json=payload)

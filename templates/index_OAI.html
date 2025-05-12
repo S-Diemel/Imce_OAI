@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Overall Page Styles -->
   <style>
+    /* Base Reset and Typography */
     body {
       margin: 0;
       padding: 0;
@@ -13,6 +14,8 @@
       background-color: white;
       color: #333;
     }
+
+    /* Header and Navigation */
     header {
       background-color: #d50060;
       color: #fff;
@@ -32,6 +35,8 @@
       text-decoration: none;
       font-weight: bold;
     }
+
+    /* Main Content */
     main {
       padding: 2rem;
       max-width: 1000px;
@@ -50,17 +55,20 @@
       font-size: 1.1rem;
       line-height: 1.6;
     }
+
+    /* Footer */
     footer {
       text-align: center;
       padding: 1rem;
       background-color: #d50060;
       color: #fff;
     }
-    /* Streaming Container (Avatar) Styles */
+
+    /* Streaming Container */
     #heygen-streaming-embed {
       z-index: 9999;
       position: fixed;
-      display: flex;              /* same in both states so we don’t break the transition */
+      display: flex;              /* consistent in both states */
       flex-direction: column;
       top: calc(100vh - 200px - 40px);
       left: calc(100vw - 200px - 40px);
@@ -81,7 +89,6 @@
       overflow: hidden;
       cursor: pointer;
     }
-    /* Expanded state: container is larger and rectangular */
     #heygen-streaming-embed.expand {
       width: 33vw;
       height: calc(100vh - 10px);
@@ -89,7 +96,7 @@
       border: 5px;
       right: auto;
       bottom: auto;
-      top: 5px;                                        /* 5px from the top */
+      top: 5px;    /* 5px from top */
       left: calc(100vw - 33vw - 5px);
       overflow: hidden;
       cursor: default;
@@ -98,7 +105,8 @@
     #heygen-streaming-embed:not(.expand) #overlay {
       display: none;
     }
-    /* Video element fills the container */
+
+    /* Media Elements */
     #mediaElement {
       width: 100%;
       height: 35%;
@@ -114,9 +122,9 @@
       border-bottom-left-radius: 0;
       border-bottom-right-radius: 0;
       box-sizing: border-box;
-
     }
-    /* Fallback image styling */
+
+    /* Fallback Image */
     #fallbackImage {
       position: relative;
       top: 0;
@@ -125,8 +133,7 @@
       height: 35%;
       object-fit: cover;
       z-index: 2;
-      /* Always visible when no session is active */
-      display: block;
+      display: block;  /* always when no session */
       border: 5px solid #d50060;
       border-top-left-radius: 8px;
       border-top-right-radius: 8px;
@@ -134,45 +141,42 @@
       border-bottom-right-radius: 0;
       box-sizing: border-box;
     }
-
     #heygen-streaming-embed.expand #fallbackImage {
       filter: brightness(70%);
     }
 
-    /* Start button (only in expanded mode when no session is active) */
+    /* Controls: Start Button & Loader */
     #startSessionBtn {
       position: absolute;
       top: 15%;
       left: 50%;
       transform: translateX(-50%);
       font-size: 1rem;
-      background-color: #d50060; /* your pink */
-      color: white;               /* text color */
+      background-color: #d50060;
+      color: white;
       padding: 10px 20px;
-      border-radius: 30px;       /* pill shape */
+      border-radius: 30px;
       cursor: pointer;
       z-index: 100;
       font-weight: bold;
       text-align: center;
-      border: none;         /* remove border */
+      border: none;
       box-shadow: none;
-      font-family: 'Inter', sans‑serif;
+      font-family: 'Inter', sans-serif;
     }
     .loader {
       display: none;
       border: 7px solid #f3f3f3;    /* Light grey */
-      border-top: 7px solid #d50060;/* Blue */
+      border-top: 7px solid #d50060;
       border-radius: 50%;
       width: 50px;
       height: 50px;
       animation: spin 2s linear infinite;
-      position: absolute;            /* so it sits on top of the video/avatar */
+      position: absolute;
       top: 18%;
       left: 50%;
       z-index: 100;
     }
-
-    /* now include the translation + the rotation in every frame */
     @keyframes spin {
       from {
         transform: translate(-50%, -50%) rotate(0deg);
@@ -181,21 +185,17 @@
         transform: translate(-50%, -50%) rotate(360deg);
       }
     }
-
-    /* 3) when the button has “loading”, hide the button… */
     #startSessionBtn.loading {
       display: none;
       visibility: hidden;
-      transition-delay: 0s;
     }
-
-    /* 4) …and show the loader right after it in the DOM */
     #startSessionBtn.loading ~ .loader {
       display: block;
     }
-    /* Minimize button base */
+
+    /* Minimize Button */
     #minimizeBtn {
-      display: none;            /* hide by default */
+      display: none;
       position: absolute;
       top: 8px;
       left: 8px;
@@ -206,22 +206,51 @@
       line-height: 1;
       cursor: pointer;
       z-index: 200;
-      text-shadow:
-        0 0 7px black;
-      background: transparent;
+      text-shadow: 0 0 7px black;
     }
-
     /* Show only when expanded */
     #heygen-streaming-embed.expand #minimizeBtn {
       display: block;
     }
-    /* Overlay for chat and controls */
+
+    #pauseBtn {
+      position: absolute;
+      top: 29%;
+      left: 12px;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+
+      background: transparent;
+      color: #fff;
+      border: none;
+      outline: none;
+      border-radius: 4px;
+
+      /* center the icon */
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+       /* sizing of the emoji */
+      font-size: 2.2rem;
+      line-height: 28px;    /* prevents extra line-height bumps */
+      z-index: 10;
+      display: none;
+      text-shadow: 0 0 7px black;
+    }
+
+    #heygen-streaming-embed.expand #pauseBtn {
+      display: flex;
+    }
+
+
+    /* Chat Overlay */
     #overlay {
       position: absolute;
       bottom: 0;
       width: 100%;
-      /* Define a fixed or relative height for the overlay if needed */
-      height: 65%; /* This is an example value; adjust as desired */
+      height: 65%;  /* adjust as needed */
       background: #d50060;
       color: #fff;
       padding: 5px;
@@ -232,7 +261,7 @@
       z-index: 3;
     }
 
-     /* Chat history styling: always visible and flexible */
+    /* Chat History */
     #chatHistory {
       flex: 1;
       overflow-y: auto;
@@ -244,9 +273,8 @@
       display: flex;
       flex-direction: column;
       gap: 5px;
-      font-family: 'Inter', sans‑serif;
+      font-family: 'Inter', sans-serif;
     }
-    /* New chat bubble styling for user messages */
     .chat-message {
       max-width: 70%;
       padding: 10px 15px;
@@ -258,68 +286,80 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
+    .chat-message p:first-child, p:last-child {
+        display: inline;   /* make them inline so no extra block spacing */
+        margin: 0;         /* remove any default top/bottom margin */
+        padding: 0;        /* remove any default padding */
+      }
 
-    /* Talk section controls */
+    /* Talk Section */
     #talk-section {
       display: flex;
       align-items: center;
+      --control-height: 32px;
     }
-    #talk-section button, #talk-section input {
+    #talk-section textarea {
+      flex-grow: 1;
       padding: 5px;
+      margin-right: 5px;
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      color: #000;
+      resize: none;
+      overflow: hidden;
+      line-height: 1.5em;
+      box-sizing: border-box;
+      min-height: var(--control-height);
+      max-height: 150px;
+      overflow-y: auto !important;
+    }
+    #talk-section button {
+      height: var(--control-height);
+      background-color: #FFB6C1;
+      color: black;
+      cursor: pointer;
+      font-weight: bold;
+      font-family: 'Inter', sans-serif;
       border: none;
       border-radius: 4px;
       margin-right: 5px;
       font-size: 0.9rem;
-      font-weight: bold;
-      font-family: 'Inter', sans‑serif;
     }
     #talk-section input {
       flex-grow: 1;
       border: 1px solid #ccc;
       color: #000;
     }
-    #talk-section button {
-      background-color: #FFB6C1;
-      color: black;
-      cursor: pointer;
-      font-weight: bold;
-      font-family: 'Inter', sans‑serif;
-    }
-    /* Toggle chat history button style */
-    #toggleChatBtn {
-      background-color: #d50060;
-      color: #fff;
-      cursor: pointer;
-      font-weight: bold;
-      font-family: 'Inter', sans‑serif;
-    }
-    /* Chat prompt styling: visible only in minimized mode */
+
+    /* Chat Prompt */
     #chatPrompt {
       position: absolute;
       top: 80%;
       left: 50%;
       transform: translate(-50%, -50%);
       font-size: 0.7rem;
-      background-color: #d50060; /* your pink */
-      color: white;               /* text color */
+      background-color: #d50060;
+      color: white;
       padding: 7px 15px;
-      border-radius: 30px;       /* pill shape */
+      border-radius: 30px;
       cursor: pointer;
       z-index: 10;
       font-weight: bold;
       text-align: center;
-      font-family: 'Inter', sans‑serif;
+      font-family: 'Inter', sans-serif;
     }
-    /* Hide the chat prompt when the container is expanded */
     #heygen-streaming-embed.expand #chatPrompt {
       display: none;
     }
-    /* 1) Hide everything when minimized & no session */
+
+    /* Minimized States */
+    /* Hide everything when minimized & no session */
     #heygen-streaming-embed:not(.expand) > * {
       display: none !important;
     }
-
-    /* 2) Show & stretch only the fallback image */
+    /* Show fallback & prompt when minimized without session */
     #heygen-streaming-embed:not(.expand):not(.session-active) > #fallbackImage {
       display: block !important;
       width: 100% !important;
@@ -328,13 +368,10 @@
       border: none !important;
       border-radius: inherit !important;
     }
-
-    /* 3) Keep the chat prompt visible when minimized */
     #heygen-streaming-embed:not(.expand):not(.session-active) > #chatPrompt {
       display: block !important;
     }
-
-    /* 4) Minimized & session-active: show ONLY the mediaElement, filling the circle */
+    /* Show media when minimized with active session */
     #heygen-streaming-embed:not(.expand).session-active > #mediaElement {
       display: block !important;
       width: 100% !important;
@@ -343,43 +380,42 @@
       border: none !important;
       border-radius: inherit !important;
     }
-    /* Mic button: same height as input, minimal padding */
+
+    /* Microphone Button */
     #micBtn {
-      background: none;
-      border: none;
-      padding: 0;                  /* kill default padding */
-      margin: 0;                   /* kill default margin */
-      height: 1.7rem;              /* match your input’s ~2.5rem height */
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
     }
-
-    /* SVG: slightly smaller than the button, perfectly centered */
     #micBtn svg {
       width: 1.25rem;
       height: 1.25rem;
-      stroke: currentColor;        /* inherit your button/text color */
+      stroke: currentColor;
     }
-    /* when not recording: show only the outline mic */
-    #micBtn #micIcon   { display: block; }
-    #micBtn #recIcon   { display: none; }
-
-    /* when recording: show the white solid mic */
-    #micBtn.recording #micIcon { display: none; }
+    #micBtn #micIcon {
+      display: block;
+    }
+    #micBtn #recIcon {
+      display: none;
+    }
+    #micBtn.recording #micIcon {
+      display: none;
+    }
     #micBtn.recording #recIcon {
       display: block;
-      fill: #fff;        /* white SVG fill */
-      stroke: #fff;      /* if your icon uses stroke */
+      fill: #fff;
+      stroke: #fff;
     }
     #micBtn.recording {
-      background-color: #d50000;  /* red background */
+      background-color: #d50000;
     }
-
   </style>
   <!-- Include LiveKit Client Library -->
   <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+  <!-- Markdown-it from jsDelivr CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
+
 </head>
 <body>
 <!-- Header / Navigation -->
@@ -417,6 +453,7 @@
   <!-- Start button shown when expanded and no session is active -->
   <button id="startSessionBtn">Start</button>
   <button id="minimizeBtn" title="Minimize">×</button>
+  <button id="pauseBtn" title="Pauze"  style="display:none">⏸</button>
   <div class="loader"></div>
   <!-- Overlay for chat and controls -->
   <div id="overlay">
@@ -424,7 +461,12 @@
     <div id="chatHistory"></div>
     <!-- Talk Section with Toggle, Text Field, Talk Button, and Microphone Button -->
     <div id="talk-section">
-      <input id="taskInput" type="text" placeholder="Je vraag of bericht ...">
+      <textarea
+              id="taskInput"
+              placeholder="Je vraag of bericht ..."
+              rows="1"
+              style="resize: none; overflow: hidden;"
+      ></textarea>
       <button id="talkBtn">Stuur</button>
       <button id="micBtn" title="Start spraak">
         <!-- normal outline mic -->

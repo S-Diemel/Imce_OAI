@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 import os
 import requests
+import re
 
 app = Flask(__name__)
 
@@ -9,6 +10,7 @@ load_dotenv()
 HEYGEN_API_KEY = os.getenv("HEYGEN_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 vector_store_id = "vs_67a493b70a088191b24ee25d9e103f6d"
+subjects = ['Data science', 'Machine learning', 'Kunstmatige intelligentie (AI)', 'computers', 'ICT', 'Prompt engineering', 'software']
 
 @app.route("/")
 def index():
@@ -44,15 +46,81 @@ def authenticate_with_heygen():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-def vector_store_search():
-    return False
+def vector_store_search(query):
+    endpoint = f"https://api.openai.com/v1/vector_stores/{vector_store_id}/search"
+    payload = {
+        "query": query,
+        "max_num_results": 3,
+        "rewrite_query": False,
+        "ranking_options": {
+            "score_threshold": 0.7
+        }
 
+    }
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json"
+    }
 
-@app.route('/api/openai/response', methods=['POST'])
-def custom_openai_rag():
+    response = requests.post(endpoint, headers=headers, json=payload)
+    response.raise_for_status()
+    context = "Dit is de context waarop je het antwoord moet baseren: \n "
 
-    user_input = request.json.get('text')
+    if len(response.json()['data'])==0:
+        return '\nzeg dat je het niet weet omdat je hier geen informatie over hebt en dat ik iets anders kan vragen'
 
+    for i, result in enumerate(response.json()['data']):
+        content = f"{i+1}: {result['content'][0]['text']} \n "
+        context += content
+    return context
+
+def vector_store_search_check(user_input):
+    instructions = (
+        f"""
+        Je bent een AI die uitsluitend antwoordt met "ja" of "nee" op basis van strikt vastgestelde criteria. Beantwoord een vraag of opmerking uitsluitend met het woord "ja" als één of meer van de onderstaande situaties van toepassing is:
+
+        1. Er wordt om specifieke informatie gevraagd.
+        
+        2. Het betreft een inhoudelijke vraag over iets.
+        
+        3. Er wordt gevraagd om verduidelijking of uitleg.
+        
+        4. als de inhoud is gerelateerd aan een van deze onderwerpen: {subjects}
+        
+        In alle andere gevallen, geef uitsluitend het antwoord "nee".
+        
+        Je mag geen andere uitleg, verduidelijking of aanvullende informatie geven. Gebruik alleen het woord "ja" of "nee" in je antwoord.
+
+        """
+    )
+    payload = {
+        "model": "gpt-4.1-mini-2025-04-14",
+        "input": user_input,
+        "instructions": instructions
+    }
+
+    headers = {
+        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    openai_url = "https://api.openai.com/v1/responses"
+
+    try:
+        response = requests.post(openai_url, headers=headers, json=payload)
+        response.raise_for_status()
+
+        data = response.json()
+        output_text = data['output'][-1]['content'][0]['text']
+        if re.search(r'\bja\.?\b', output_text, re.IGNORECASE):
+            return True
+        else:
+            return False
+
+    except requests.RequestException as e:
+        return False
+
+def custom_rag(user_input):
     imce_instructions = (
         """
         Je bent Imce, een MBO-docent in opleiding en ambassadeur voor het MIEC-data-initiatief.  
@@ -66,13 +134,18 @@ def custom_openai_rag():
         
         🧭 Gedrag en Stijl
         - Spreek altijd Nederlands, ongeacht de taal van de gebruiker.  
-        - Beperk je antwoord tot maximaal drie zinnen.  
-        - Gebruik waar mogelijk de vector_store om relevante en contextgerichte antwoorden te geven.  
+        - Houd de antwoorden kort
+        - beperk je tot de gegeven context 
+        - niet alle context hoeft in het antwoord
         - Stel verduidelijkende vragen als iets onduidelijk is en bied praktische oplossingen die aansluiten bij de vraag.  
         - Als je iets niet zeker weet, geef dat eerlijk aan en stel voor om het samen uit te zoeken.
         
         """
     )
+    if vector_store_search_check(user_input):
+        query = user_input[-1]['content']
+        context = vector_store_search(query)
+        user_input[-1]['content'] = query + '\n' + context
 
     payload = {
         "model": "gpt-4o-mini-2024-07-18",
@@ -94,10 +167,18 @@ def custom_openai_rag():
         data = response.json()
         output_text = data['output'][-1]['content'][0]['text']
 
-        return jsonify({"response": output_text})
+        return {"response": output_text}
 
     except requests.RequestException as e:
-        return jsonify({"error": str(e)}), 500
+        return {"error": str(e)}, 500
+
+
+@app.route('/api/openai/response', methods=['POST'])
+def call_custom_rag():
+    user_input = request.json.get('text')
+    output = custom_rag(user_input)
+    return jsonify(output)
+
 
 
 if __name__ == "__main__":

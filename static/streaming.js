@@ -9,6 +9,8 @@ const taskInput = document.getElementById("taskInput");
 const chatHistory = document.getElementById("chatHistory");
 const micBtn = document.getElementById("micBtn");
 const minimizeBtn = document.getElementById('minimizeBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+
 // Make sure this exists in your HTML
 
 // Runtime state variables used during an active session
@@ -21,8 +23,7 @@ let partialMessage = "";
 let previous_response = undefined
 let context = [];
 let heygenIsSpeaking = false;
-// For speech recognition
-let recognition;
+let recognition; // For speech recognition
 
 // Configuration constants for the avatar and API
 const AVATAR_ID = "3b8a02792ccb4d52b7758f97bd133f05";
@@ -33,73 +34,101 @@ const API_CONFIG = {
 // ===================== UI HELPERS =====================
 
 /**
- * Appends a new message to the chat history UI with a timestamp.
- *
- * @param {string} message - The message string to display in the chat log.
+ * Initialize the Markdown renderer for non-user messages.
+ * - html: allow raw HTML tags in source
+ * - linkify: automatically convert URL-like text to links
+ * - typographer: enable smart punctuation replacements
  */
- function markdownToHTML(text) {
-   // Convert **bold** to <strong>
-   text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-   // Replace newlines with <br>
-   text = text.replace(/\n/g, '<br>');
-   // Ensure it ends with a <br>
-     if (!text.endsWith('<br>')) {
-       text += '<br>';
-     }
-   return text;
- }
+const md = window.markdownit({
+  html: true,
+  linkify: true,
+  typographer: true
+});
 
+/**
+ * Append a new chat message to the history container.
+ *
+ * If `user` is truthy, escapes HTML-sensitive characters and replaces
+ * newlines with `<br>` so that user input appears as plain text.
+ * Otherwise, renders the message as Markdown (for system/bot messages).
+ *
+ * @param {string} message – The text content to append.
+ * @param {boolean} user    – True if this is a user message; false for bot messages.
+ */
 function updateChatHistory(message, user) {
-  if (user){
-     chatHistory.innerHTML += `<div class="chat-message">${markdownToHTML(message)}</div>`;
-     chatHistory.scrollTop = chatHistory.scrollHeight;
+  let rendered;
+
+  if (user) {
+    // Escape HTML and preserve line breaks for user-supplied text
+    rendered = message
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\r?\n/g, '<br>');
+    console.log('User message:', rendered);
+    chatHistory.innerHTML += `<div class="chat-message user">${rendered}</div>`;
   } else {
-  chatHistory.innerHTML += markdownToHTML(message);
-  chatHistory.scrollTop = chatHistory.scrollHeight;
+    // Render system/bot messages using Markdown
+    rendered = md.render(message);
+    chatHistory.innerHTML += rendered;
   }
+
+  // Scroll to the latest message
+  chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
 /**
- * Shows or hides the fallback image and media element based on session state.
+ * Toggle visibility of the fallback image vs. media element depending on session state.
+ *
+ * If a session is active (`sessionInfo` truthy), hide the fallback placeholder
+ * and show the media element. Otherwise, show the placeholder and hide media.
  */
 function updateFallbackImage() {
   const isActive = Boolean(sessionInfo);
+
+  // Show placeholder when no session, hide when active
   fallbackImage.style.display = isActive ? 'none' : 'block';
-  mediaElement.style.display = isActive ? 'block' : 'none';
+  mediaElement.style.display   = isActive ? 'block' : 'none';
 }
 
 /**
- * Displays the "Start" button only if the container is expanded and no session is active.
+ * updates the pause button
  */
-function updateStartButton() {
-  const shouldShow = streamingEmbed.classList.contains('expand') && !sessionInfo;
-
-  if (shouldShow) {
-    // Show it…
-    startSessionBtn.style.display = 'block';
-    startSessionBtn.disabled    = false;
-    startSessionBtn.textContent = 'Start';
-
+function updatePauseButton() {
+  if (sessionInfo) {
+    pauseBtn.style.display = 'flex';
   } else {
-    // Hide it
-    startSessionBtn.style.display = 'none';
-    startSessionBtn.disabled    = true;
-    startSessionBtn.textContent = '';
+    pauseBtn.style.display = 'none';
   }
 }
+/**
+ * Show or hide the "Start" button based on the embed container state and session.
+ *
+ * Only show the Start button if:
+ *   1. The streaming embed container has the "expand" class.
+ *   2. There is no active session.
+ *
+ * Otherwise, hide and disable the button.
+ */
+function updateStartButton() {
+  const isExpanded  = streamingEmbed.classList.contains('expand');
+  const hasSession  = Boolean(sessionInfo);
+  const shouldShow  = isExpanded && !hasSession;
 
-
-// ===================== INACTIVITY TIMER =====================
-
-// Starts or resets a 10-second timer that will auto-close the session if no input is received
-let inactivityTimer = null;
-function resetInactivityTimer() {
-  clearTimeout(inactivityTimer);
-  inactivityTimer = setTimeout(() => {
-    console.log("No new text prompts for 10 seconds. Stopping streaming session.");
-    closeSession();
-  }, 10000);
+  if (shouldShow) {
+    // Ready to start a new session
+    startSessionBtn.style.display    = 'block';
+    startSessionBtn.disabled         = false;
+    startSessionBtn.textContent      = 'Start';
+  } else {
+    // Either collapsed or already in session—hide the button
+    startSessionBtn.style.display    = 'none';
+    startSessionBtn.disabled         = true;
+    startSessionBtn.textContent      = '';
+  }
+  updatePauseButton
 }
+
 
 // ===================== TOKEN AND SESSION =====================
 
@@ -126,9 +155,13 @@ async function getSessionToken() {
  * This sets up avatar streaming, media handling, WebSocket communication, and message events.
  */
 async function createNewSession() {
-  if (!sessionToken) await getSessionToken();
+  // Ensure we have a valid session token before proceeding
+  if (!sessionToken) {
+    await getSessionToken();
+  }
 
   try {
+    // Request a new streaming session from the API
     const response = await fetch(`${API_CONFIG.serverUrl}/v1/streaming.new`, {
       method: "POST",
       headers: {
@@ -136,73 +169,114 @@ async function createNewSession() {
         Authorization: `Bearer ${sessionToken}`,
       },
       body: JSON.stringify({
-        quality: "high",
-        avatar_id: AVATAR_ID,
-        language: "nl",
-        version: "v2",
-        video_encoding: "H264",
+        quality: "high",              // Stream quality setting
+        avatar_id: AVATAR_ID,         // Identifier for the avatar to use
+        language: "nl",               // Language code (Dutch)
+        version: "v2",                // API version
+        video_encoding: "H264",       // Video codec
       }),
     });
 
-    if (!response.ok) throw new Error("Failed to create new session");
-    const data = await response.json();
-    if (!data?.data?.url || !data?.data?.access_token || !data?.data?.session_id) throw new Error("Session info missing");
+    // If the HTTP status is not in the 200–299 range, throw an error
+    if (!response.ok) {
+      throw new Error("Failed to create new session");
+    }
 
+    const data = await response.json();
+
+    // Verify that the response contains all expected fields
+    if (
+      !data?.data?.url ||
+      !data?.data?.access_token ||
+      !data?.data?.session_id
+    ) {
+      throw new Error("Session info missing");
+    }
+
+    // Store the session information for later use
     sessionInfo = data.data;
 
+    // Initialize a LiveKit Room with adaptive streaming and dynacast enabled
     room = new LivekitClient.Room({
       adaptiveStream: true,
       dynacast: true,
-      videoCaptureDefaults: { resolution: LivekitClient.VideoPresets.h720.resolution },
+      videoCaptureDefaults: {
+        resolution: LivekitClient.VideoPresets.h720.resolution,
+      },
     });
 
-    // Handle incoming messages from the avatar
+    // Listen for data sent from the avatar, such as stop-talking events
     room.on(LivekitClient.RoomEvent.DataReceived, (rawMessage) => {
       try {
         const textData = new TextDecoder().decode(rawMessage);
         const eventData = JSON.parse(textData);
+
         if (eventData.type === "avatar_stop_talking") {
-          // Turn on mic
+          // Re-enable the talk button and microphone button once avatar stops speaking
           document.querySelector("#talkBtn").disabled = false;
           micBtn.disabled = false;
           heygenIsSpeaking = false;
-
         }
-
       } catch (err) {
         console.error("Error parsing incoming data:", err);
+        // In case of parse errors, also ensure controls are re-enabled
         document.querySelector("#talkBtn").disabled = false;
         micBtn.disabled = false;
         heygenIsSpeaking = false;
       }
     });
 
-    // Prepare an empty media stream and add tracks when available
+    // Create an empty MediaStream; tracks will be added when subscribed
     mediaStream = new MediaStream();
 
+    // When a new track is subscribed (audio/video), add it to the media stream
     room.on(LivekitClient.RoomEvent.TrackSubscribed, (track) => {
       if (track.kind === "video" || track.kind === "audio") {
         mediaStream.addTrack(track.mediaStreamTrack);
-        if (mediaStream.getVideoTracks().length && mediaStream.getAudioTracks().length) {
+
+        // Once both video and audio tracks are present, attach the stream to the media element
+        if (
+          mediaStream.getVideoTracks().length &&
+          mediaStream.getAudioTracks().length
+        ) {
           mediaElement.srcObject = mediaStream;
         }
       }
     });
 
+    // Remove tracks from the media stream when unsubscribed
     room.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track) => {
       mediaStream.removeTrack(track.mediaStreamTrack);
     });
 
-    room.on(LivekitClient.RoomEvent.Disconnected, (reason) => {
+    // Log disconnection reasons for debugging
+    room.on(LivekitClient.RoomEvent.Disconnected, async (reason) => {
       console.log(`Room disconnected: ${reason}`);
+      // ensure our UI resets just like when the user clicks “Pause” or “×”
+      // Restore UI state on error
+        document.querySelector("#talkBtn").disabled = false;
+        micBtn.disabled = false;
+        heygenIsSpeaking = false;
+        await closeSession();
+
+        updateFallbackImage();
+        updateStartButton();
     });
 
-    await room.prepareConnection(sessionInfo.url, sessionInfo.access_token);
+
+    // Finalize connection to the LiveKit server using provided session details
+    await room.prepareConnection(
+      sessionInfo.url,
+      sessionInfo.access_token
+    );
+
     console.log("Session created successfully");
   } catch (err) {
+    // Catch and log any errors during session creation
     console.error("Error creating new session", err);
   }
 }
+
 
 /**
  * Starts the streaming avatar session after the session has been created.
@@ -223,6 +297,8 @@ async function startStreamingSession() {
 
     await room.connect(sessionInfo.url, sessionInfo.access_token);
     updateFallbackImage();
+    streamingEmbed.classList.add('session-active');
+    updatePauseButton();
     console.log("Streaming started successfully");
     streamingEmbed.classList.add('session-active');
   } catch (err) {
@@ -231,6 +307,9 @@ async function startStreamingSession() {
 
 }
 
+
+
+// ===================== COMMUNICATION =====================
 /**
  * Calls the ChatGPT API with the provided text and updates the chat history with the response.
  *
@@ -266,50 +345,60 @@ async function callChatGPT(text) {
   }
 }
 
-function formatGPTOutput(text) {
-  const stepRegex = /(\d+\.\s\*\*[^\*]+\*\*):\s*/g;
-
-  // Add a newline between title and description
-  const withNewlines = text.replace(stepRegex, "\n$1\n");
-
-  // Optional: Add extra newlines between steps
-  const formatted = withNewlines.replace(/(\n\d+\.\s\*\*[^\*]+\*\*\n)/g, "\n$1");
-
-  return formatted.trim();
-}
-// ===================== COMMUNICATION =====================
 
 /**
- * Sends a user message to the Heygen API for processing.
- * Handles input validation, updates the UI, and sends the request payload.
+ * Send a text message to the Heygen API and update the chat UI accordingly.
  *
- * @param {string} text - The user's input message to send.
- * @param {string} taskType - The type of task (e.g., "talk", "command", etc.).
+ * This function handles:
+ *   1. Session validation
+ *   2. UI state management (disabling/enabling buttons)
+ *   3. Sending user input to ChatGPT for preprocessing
+ *   4. Sanitizing the ChatGPT response (removing emojis, trimming length)
+ *   5. Sending the sanitized text payload to Heygen's streaming task endpoint
+ *   6. Error handling and retry logic for 500-level errors.
  */
 async function sendText(text, taskType = "repeat") {
-  if (!sessionInfo) return console.error("No active session");
+  // Ensure there is an active session before proceeding
+  if (!sessionInfo) {
+    console.error("No active session");
+    return;
+  }
+
+  // Prevent overlapping speech tasks
   if (heygenIsSpeaking) {
-        return;
-      }
+    return;
+  }
+
+  // Disable UI controls while processing
   document.querySelector("#talkBtn").disabled = true;
   micBtn.disabled = true;
 
-  updateChatHistory(`${text}`, true);
+  // Display the raw user input in the chat history
+  updateChatHistory(text, true);
+
+  // Preprocess the text through ChatGPT
   const text_OAI = await callChatGPT(text);
   console.log(text_OAI);
-  const sanitized = text_OAI.replace(/[😀-🛿]/gu, '').substring(0, 10000).trim();
+
+  // Remove emojis and limit to 10,000 characters
+  const sanitized = text_OAI
+    .replace(/[😀-🛿]/gu, '')   // Strip out emoji characters
+    .substring(0, 10000)       // Enforce maximum length
+    .trim();
+
+  // If the result is empty or invalid, re-enable UI and abort
   if (!sanitized) {
-      console.warn("Attempted to send empty or invalid text. Ignoring.");
-      // Re-enable the talk button if disabled due to blocking state
-      document.querySelector("#talkBtn").disabled = false;
-      micBtn.disabled = false;
-      heygenIsSpeaking = false;
-      return;
-    }
+    console.warn("Attempted to send empty or invalid text. Ignoring.");
+    document.querySelector("#talkBtn").disabled = false;
+    micBtn.disabled = false;
+    heygenIsSpeaking = false;
+    return;
+  }
 
-    // Set the flag indicating Heygen is now busy speaking
-    heygenIsSpeaking = true;
+  // Mark that Heygen is now speaking to block further input
+  heygenIsSpeaking = true;
 
+  // Construct the payload for the Heygen API
   const payload = {
     session_id: sessionInfo.session_id,
     text: sanitized,
@@ -317,6 +406,7 @@ async function sendText(text, taskType = "repeat") {
   };
 
   try {
+    // Send a streaming task request to Heygen
     const response = await fetch(`${API_CONFIG.serverUrl}/v1/streaming.task`, {
       method: "POST",
       headers: {
@@ -326,29 +416,35 @@ async function sendText(text, taskType = "repeat") {
       body: JSON.stringify(payload),
     });
 
+    // Handle non-OK responses
     if (!response.ok) {
       const errText = await response.text();
       console.error(`Heygen API responded with status ${response.status}:`, errText);
 
-      if (response.status === 500) {
-        console.warn("Retrying once after 500 error...");
-        await new Promise(res => setTimeout(res, 1000));
-        document.querySelector("#talkBtn").disabled = false;
-        micBtn.disabled = false;
-        heygenIsSpeaking = false;
-        return sendText(text, taskType);
-      }
-    }
-  updateChatHistory(`${sanitized}`, false);
-
-    } catch (err) {
-      console.error("Error sending text", err);
-      // Ensure UI is not stuck if there's an error
+      // Restore UI state on error
       document.querySelector("#talkBtn").disabled = false;
       micBtn.disabled = false;
       heygenIsSpeaking = false;
+      await closeSession();
+
+      updateFallbackImage();
+      updateStartButton();
     }
+
+    // Append the sanitized text to the chat history as Heygen's response
+    updateChatHistory(sanitized, false);
+
+  } catch (err) {
+    // Network or unexpected error handling
+    console.error("Error sending text", err);
+
+    // Ensure UI controls are re-enabled
+    document.querySelector("#talkBtn").disabled = false;
+    micBtn.disabled = false;
+    heygenIsSpeaking = false;
   }
+}
+
 
 // ===================== SESSION CLEANUP =====================
 
@@ -379,8 +475,8 @@ async function closeSession() {
     heygenIsSpeaking=false;
     document.querySelector("#talkBtn").disabled = false;
     micBtn.disabled = false;
-    clearTimeout(inactivityTimer);
-
+    streamingEmbed.classList.remove('session-active');
+    updatePauseButton();
     updateFallbackImage();
     updateStartButton();
     console.log("Session closed");
@@ -469,7 +565,6 @@ function initEventListeners() {
     if (!e.target.closest('button') && !e.target.closest('input')) {
       if (!streamingEmbed.classList.contains('expand')) {
         streamingEmbed.classList.add('expand');
-        clearTimeout(inactivityTimer);
         updateFallbackImage();
         updateStartButton();
       }
@@ -494,41 +589,64 @@ function initEventListeners() {
     }
   });
   // Minimize the avatar when the ‘×’ is clicked
-  minimizeBtn.addEventListener('click', (e) => {
-    e.stopPropagation();                          // don’t re-fire the container’s click
-    streamingEmbed.classList.remove('expand');    // collapse it
-    resetInactivityTimer();                   // stop any pending auto-close
+  minimizeBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    streamingEmbed.classList.remove('expand');
+
+    // immediately stop the streaming session
+    await closeSession();
     updateFallbackImage();
     updateStartButton();
   });
 
+  pauseBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    // This will stop the stream & clean up but leave the embed expanded
+    await closeSession();
+    updateFallbackImage();
+    updateStartButton();
+  });
 
-  // Handles the talk button click: sends text and restarts inactivity timer
-  document.querySelector("#talkBtn").addEventListener("click", (e) => {
+  document.querySelector("#talkBtn").addEventListener("click", async (e) => {
     e.stopPropagation();
     const text = taskInput.value.trim();
-    if (text) {
-      if (!streamingEmbed.classList.contains('expand')) resetInactivityTimer();
+    if (!text) return;
+
+    // Clear the input immediately
+    taskInput.value = "";
+
+    if (!sessionInfo) {
+      // No HeyGen session → just send to ChatGPT
+      updateChatHistory(text, true);
+      try {
+        const gptReply = await callChatGPT(text);
+        if (gptReply) updateChatHistory(gptReply, false);
+      } catch (err) {
+        console.error("ChatGPT error:", err);
+      }
+    } else {
+      // HeyGen session is live → send to avatar as before
       sendText(text, "repeat");
-      taskInput.value = "";
     }
   });
 
-  // Allows sending text by pressing Enter in the input field
-  taskInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      document.querySelector("#talkBtn").click();
-    }
+  taskInput.addEventListener('input', () => {
+    taskInput.style.height = taskInput.style.height = 'auto';
+    taskInput.style.height = taskInput.scrollHeight + 'px';
+    console.log(taskInput.scrollHeight)
   });
 
-  // Toggles chat history visibility on button click
-//  document.querySelector("#toggleChatBtn").addEventListener("click", (e) => {
-//    e.stopPropagation();
-//    const isHidden = chatHistory.style.display === "none" || chatHistory.style.display === "";
-//      chatHistory.style.display = isHidden ? "block" : "none";
-//      e.target.textContent = isHidden ? "Verberg chat" : "Zie de chat";
-//  });
+  taskInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        talkBtn.click();
+      }
+    });
+
+  talkBtn.addEventListener('click', () => {
+    taskInput.value = '';
+    taskInput.style.height = 'auto';
+  });
 
   // Handles clicks on the mic button to start speech recognition
   if (micBtn) {

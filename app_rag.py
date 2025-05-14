@@ -143,6 +143,7 @@ def custom_rag(user_input):
         """
     )
     if vector_store_search_check(user_input):
+        print('file search')
         query = user_input[-1]['content']
         context = vector_store_search(query)
         user_input[-1]['content'] = query + '\n' + context

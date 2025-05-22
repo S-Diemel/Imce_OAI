@@ -358,11 +358,6 @@ async function callChatGPT(text) {
  *   6. Error handling and retry logic for 500-level errors.
  */
 async function sendText(text, taskType = "repeat") {
-  // Ensure there is an active session before proceeding
-  if (!sessionInfo) {
-    console.error("No active session");
-    return;
-  }
 
   // Prevent overlapping speech tasks
   if (heygenIsSpeaking) {
@@ -372,9 +367,22 @@ async function sendText(text, taskType = "repeat") {
   // Disable UI controls while processing
   document.querySelector("#talkBtn").disabled = true;
   micBtn.disabled = true;
-
   // Display the raw user input in the chat history
   updateChatHistory(text, true);
+
+  // Ensure there is an active session before proceeding
+  if (!sessionInfo) {
+    try {
+    const gptReply = await callChatGPT(text);
+    if (gptReply) updateChatHistory(gptReply, false);
+    } catch (err) {
+    console.error("ChatGPT error:", err);
+    }
+    document.querySelector("#talkBtn").disabled = false;
+    micBtn.disabled = false;
+    heygenIsSpeaking = false;
+    return;
+  }
 
   // Preprocess the text through ChatGPT
   const text_OAI = await callChatGPT(text);
@@ -394,7 +402,8 @@ async function sendText(text, taskType = "repeat") {
     heygenIsSpeaking = false;
     return;
   }
-
+  // Append the sanitized text to the chat history as Heygen's response
+  updateChatHistory(sanitized, false);
   // Mark that Heygen is now speaking to block further input
   heygenIsSpeaking = true;
 
@@ -430,9 +439,6 @@ async function sendText(text, taskType = "repeat") {
       updateFallbackImage();
       updateStartButton();
     }
-
-    // Append the sanitized text to the chat history as Heygen's response
-    updateChatHistory(sanitized, false);
 
   } catch (err) {
     // Network or unexpected error handling
@@ -614,20 +620,7 @@ function initEventListeners() {
 
     // Clear the input immediately
     taskInput.value = "";
-
-    if (!sessionInfo) {
-      // No HeyGen session → just send to ChatGPT
-      updateChatHistory(text, true);
-      try {
-        const gptReply = await callChatGPT(text);
-        if (gptReply) updateChatHistory(gptReply, false);
-      } catch (err) {
-        console.error("ChatGPT error:", err);
-      }
-    } else {
-      // HeyGen session is live → send to avatar as before
-      sendText(text, "repeat");
-    }
+    sendText(text, "repeat");
   });
 
   taskInput.addEventListener('input', () => {

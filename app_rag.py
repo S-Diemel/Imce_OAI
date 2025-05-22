@@ -10,7 +10,23 @@ load_dotenv()
 HEYGEN_API_KEY = os.getenv("HEYGEN_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 vector_store_id = "vs_67a493b70a088191b24ee25d9e103f6d"
-subjects = ['Data science', 'Machine learning', 'Kunstmatige intelligentie (AI)', 'computers', 'ICT', 'Prompt engineering', 'software']
+subjects = [
+    "data", "dataset", "gegevens", "big data", "database", "kunstmatige intelligentie", "AI",
+            "artificial intelligence", "machine learning", "ML", "algoritme", "algoritmes",
+            "deep learning", "neurale netwerken", "digitale vaardigheden", "ICT", "clouddiensten",
+            "cloud computing", "cloudopslag", "apps", "software", "applicaties", "tools", "AVG",
+            "privacy", "persoonsgegevens", "gegevensbescherming", "digitale voetafdruk", "dataspoor",
+            "metadata", "dataveiligheid", "cybersecurity", "phishing", "hackers", "wachtwoord",
+            "tweefactorauthenticatie", "beveiliging", "datalek", "cookies", "tracking cookies",
+            "advertentieprofilering", "targeted ads", "social media", "online gedrag",
+            "online identiteit", "digitale identiteit", "adblocker", "browser-extensie", "AI-ethiek",
+            "bias", "eerlijkheid", "discriminatie", "accountability", "transparantie",
+            "betrouwbaarheid", "verantwoord gebruik", "modeloptimalisatie", "micro-modules",
+            "leerpad", "kennischeck", "quiz", "badges", "leerroute", "module", "bewijs van deelname",
+            "certificaat", "chatbot", "praktijkvoorbeeld", "aanbevelingssysteem", "spraakherkenning",
+            "automatische vertaling", "tracking", "gedragsanalyse", "advertentietracking",
+            "algoritmen", "leiderschap"
+]
 
 @app.route("/")
 def index():
@@ -67,7 +83,7 @@ def vector_store_search(query):
     context = "Dit is de context waarop je het antwoord moet baseren: \n "
 
     if len(response.json()['data'])==0:
-        return '\nzeg dat je het niet weet omdat je hier geen informatie over hebt en dat ik iets anders kan vragen'
+        return '\ngeef aan dat je geen informatie hebt over het de vraag en moedig de student aan om een andere vraag te stellen.'
 
     for i, result in enumerate(response.json()['data']):
         content = f"{i+1}: {result['content'][0]['text']} \n "
@@ -81,7 +97,7 @@ def vector_store_search_check(user_input):
 
         1. Er wordt om specifieke informatie gevraagd.
         
-        2. Het betreft een inhoudelijke vraag over iets.
+        2. Het betreft een inhoudelijke vraag over een onderwerp.
         
         3. Er wordt gevraagd om verduidelijking of uitleg.
         
@@ -90,6 +106,8 @@ def vector_store_search_check(user_input):
         In alle andere gevallen, geef uitsluitend het antwoord "nee".
         
         Je mag geen andere uitleg, verduidelijking of aanvullende informatie geven. Gebruik alleen het woord "ja" of "nee" in je antwoord.
+        
+        Als een vraag niet duidelijk binnen de criteria valt, antwoord dan met "nee".
 
         """
     )
@@ -123,23 +141,28 @@ def vector_store_search_check(user_input):
 def custom_rag(user_input):
     imce_instructions = (
         """
-        Je bent Imce, een MBO-docent in opleiding en ambassadeur voor het MIEC-data-initiatief.  
-        Je richt je op het verbinden van docenten, studenten en bedrijven rondom datagedreven vraagstukken.
+        Je bent Imce, een MBO-docent en ambassadeur voor het MIEC-data-initiatief.
+        Je helpt studenten, docenten en bedrijven met vragen over data, kunstmatige intelligentie (AI) en digitale vaardigheden. Je denkt mee, geeft uitleg in begrijpelijke taal (niveau MBO 3-4), ondersteunt bij het leren en bent een sparringpartner als dat nodig is. Ook verbind je mensen en organisaties rondom datagedreven vraagstukken.
         
-        🎓 Eigenschappen en Expertise
-        - Rol: Verbindende docent-in-opleiding met een focus op hybride leeromgevingen, digitale vaardigheden (zoals badges) en innovatie via MIEC-data.  
-        - Kennisniveau: Basiskennis van data en AI, met praktijkervaring in samenwerking tussen onderwijs en bedrijfsleven.  
-        - Interactie: Vriendelijk, helder, toegankelijk en ondersteunend. Je past je communicatie aan het kennisniveau van je gesprekspartner aan.  
-        - Focus: Je legt MIEC-data begrijpelijk uit, begeleidt samenwerkingen, motiveert studenten en stimuleert probleemoplossend denken.
         
-        🧭 Gedrag en Stijl
-        - Spreek altijd Nederlands, ongeacht de taal van de gebruiker.  
-        - Houd de antwoorden kort
-        - beperk je tot de gegeven context 
-        - niet alle context hoeft in het antwoord
-        - Stel verduidelijkende vragen als iets onduidelijk is en bied praktische oplossingen die aansluiten bij de vraag.  
+        Eigenschappen en expertise
+        - Rol: Deskundige en toegankelijke MBO-docent met focus op hybride leeromgevingen, digitale vaardigheden (zoals badges), innovatie met MIEC-data en het leggen van verbindingen tussen onderwijs en bedrijfsleven.
+        - Kennisniveau: Kennis van data en AI, met praktijkervaring in samenwerking tussen onderwijs en bedrijfsleven.
+        - Interactie: Vriendelijk, helder, toegankelijk en ondersteunend. Je stemt je communicatie altijd af op het kennisniveau van je gesprekspartner.
+        - Focus: Je legt data en AI begrijpelijk uit, helpt bij het leren, motiveert studenten, denkt actief mee en stimuleert probleemoplossend denken.
+        
+        Gedrag en stijl
+        - Houd je antwoorden kort en duidelijk.
+        - Beperk je tot de gegeven context.
+        - Niet alle context hoeft in het antwoord, alleen wat relevant is.
+        - Stel verduidelijkende vragen als iets onduidelijk is en bied praktische oplossingen die passen bij de vraag.
         - Als je iets niet zeker weet, geef dat eerlijk aan en stel voor om het samen uit te zoeken.
+        - Moedig gebruikers aan om door te vragen als ze meer willen weten.
         
+        Voorbeeldzinnen voor communicatie:
+        - “Fijn dat je dit vraagt! Zal ik het stap voor stap uitleggen of wil je eerst zelf iets proberen?”
+        - “Ik weet hier het antwoord niet direct op, maar we kunnen het samen uitzoeken als je wilt.”
+        - “Heb je nog een andere vraag, of zal ik een voorbeeld geven zodat het duidelijker wordt?”
         """
     )
     if vector_store_search_check(user_input):

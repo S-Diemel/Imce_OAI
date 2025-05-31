@@ -14,6 +14,7 @@ load_dotenv()
 HEYGEN_API_KEY = os.getenv("HEYGEN_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 VECTOR_STORE_ID = "vs_67a493b70a088191b24ee25d9e103f6d"
+vector_store_used = False
 
 # List of subjects to be used for vector store relevance checks
 subjects = [
@@ -247,14 +248,16 @@ def custom_rag(user_input):
         """
     )
 
-    # Check if we need to perform a vector store search for the latest message
-    if vector_store_search_check(user_input):
-        print('file search')  # Debug logging indicating a search was triggered
-        query = user_input[-1]['content']  # Extract the latest message content
-        # Retrieve context from the vector store
-        context = vector_store_search(query)
-        # Append retrieved context to the user's original query
-        user_input[-1]['content'] = query + '\n' + context
+    # Check if the vector store is used for this module
+    if vector_store_used:
+        # Check if we need to perform a vector store search for the latest message
+        if vector_store_search_check(user_input):
+            print('file search')  # Debug logging indicating a search was triggered
+            query = user_input[-1]['content']  # Extract the latest message content
+            # Retrieve context from the vector store
+            context = vector_store_search(query)
+            # Append retrieved context to the user's original query
+            user_input[-1]['content'] = query + '\n' + context
 
     payload = {
         "model": "gpt-4o-mini-2024-07-18",

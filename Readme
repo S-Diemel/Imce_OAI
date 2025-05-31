@@ -1,3 +1,9 @@
-make a .env folder in your working directory. in this .env folder you define the API keys as follows:
-HEYGEN_API_KEY=
-OPENAI_API_KEY=
+There are 3 steps to run the code
+
+1.  make a .env folder in your working directory. in this .env folder you define the API keys as follows:
+    HEYGEN_API_KEY=
+    OPENAI_API_KEY=
+
+2.  install the required packages
+
+3.  run app.py

@@ -15,10 +15,7 @@ const pauseBtn = document.getElementById('pauseBtn');
 let sessionInfo = null;            // Stores Heygen session details once established
 let room = null;                   // LiveKit Room instance for media streaming
 let mediaStream = null;            // MediaStream used to attach tracks for playback
-let webSocket = null;              // WebSocket, if used for custom data events (not in this code)
 let sessionToken = null;           // Authentication token from backend to interact with Heygen API
-let partialMessage = "";           // Holds any partial incoming message (if needed)
-let previous_response = undefined; // (Optional) storing last response for context if needed
 let context = [];                  // Conversation context array for ChatGPT calls
 let heygenIsSpeaking = false;      // Flag to prevent overlapping speech tasks
 let recognition;                   // SpeechRecognition instance for microphone input
@@ -493,7 +490,7 @@ async function sendText(text, taskType = "repeat") {
  *
  * Steps:
  *   1. Calls Heygen API to stop the streaming task.
- *   2. Disconnects from LiveKit room and closes WebSocket if open.
+ *   2. Disconnects from LiveKit room if open.
  *   3. Clears media element’s source, resets state variables, and updates UI.
  *
  * @returns {Promise<void>}
@@ -512,8 +509,7 @@ async function closeSession() {
       body: JSON.stringify({ session_id: sessionInfo.session_id })
     });
 
-    // Close any open WebSocket (if used) and disconnect the LiveKit room
-    if (webSocket) webSocket.close();
+    // Close any open LiveKit room
     if (room) room.disconnect();
 
     // Clear media and session state

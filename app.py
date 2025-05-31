@@ -13,7 +13,7 @@ load_dotenv()
 # Retrieve API keys and configuration from environment variables
 HEYGEN_API_KEY = os.getenv("HEYGEN_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-VECTOR_STORE_ID = "vs_67a493b70a088191b24ee25d9e103f6d"
+VECTOR_STORE_ID = os.getenv("VECTOR_STORE_ID")
 vector_store_used = False
 
 # List of subjects to be used for vector store relevance checks

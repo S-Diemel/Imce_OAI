@@ -9,7 +9,8 @@ app = Flask(__name__)
 load_dotenv()
 HEYGEN_API_KEY = os.getenv("HEYGEN_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-vector_store_id = "vs_67a493b70a088191b24ee25d9e103f6d"
+VECTOR_STORE_ID = os.getenv("VECTOR_STORE_ID")
+
 subjects = [
     "data", "dataset", "gegevens", "big data", "database", "kunstmatige intelligentie", "AI",
             "artificial intelligence", "machine learning", "ML", "algoritme", "algoritmes",
@@ -63,7 +64,7 @@ def authenticate_with_heygen():
         return jsonify({"error": str(e)}), 500
 
 def vector_store_search(query):
-    endpoint = f"https://api.openai.com/v1/vector_stores/{vector_store_id}/search"
+    endpoint = f"https://api.openai.com/v1/vector_stores/{VECTOR_STORE_ID}/search"
     payload = {
         "query": query,
         "max_num_results": 3,

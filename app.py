@@ -13,7 +13,7 @@ load_dotenv()
 # Retrieve API keys and configuration from environment variables
 HEYGEN_API_KEY = os.getenv("HEYGEN_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-VECTOR_STORE_ID = os.getenv("VECTOR_STORE_ID")
+VECTOR_STORE_ID = "vs_67a493b70a088191b24ee25d9e103f6d"
 
 # List of subjects to be used for vector store relevance checks
 subjects = [
@@ -148,7 +148,7 @@ def vector_store_search_check(user_input):
     Returns:
         bool: True if a vector store search should be performed, False otherwise.
     """
-    instructions = (
+    search_check_instructions = (
         f"""
         Je bent een AI die uitsluitend antwoordt met "ja" of "nee" op basis van strikt vastgestelde criteria. Beantwoord een vraag of opmerking uitsluitend met het woord "ja" als één of meer van de onderstaande situaties van toepassing is:
 
@@ -170,7 +170,7 @@ def vector_store_search_check(user_input):
     payload = {
         "model": "gpt-4.1-mini-2025-04-14",
         "input": user_input,
-        "instructions": instructions
+        "instructions": search_check_instructions
     }
     headers = {
         "Authorization": f"Bearer {OPENAI_API_KEY}",
@@ -223,7 +223,7 @@ def custom_rag(user_input):
         """
         Je bent Imce, een MBO-docent en ambassadeur voor het MIEC-data-initiatief.
         Je helpt studenten, docenten en bedrijven met vragen over data, kunstmatige intelligentie (AI) en digitale vaardigheden. Je denkt mee, geeft uitleg in begrijpelijke taal (niveau MBO 3-4), ondersteunt bij het leren en bent een sparringpartner als dat nodig is. Ook verbind je mensen en organisaties rondom datagedreven vraagstukken.
-        Het leerpad waar jij les over gaat geven heet prompt-power en gaat voornamelijk over het schrijven van goede prompts voor generatieve AI 
+        Jij gaat vooral les geven over "prompt-power" en gaat voornamelijk over het schrijven van goede prompts voor generatieve AI 
         
         Eigenschappen en expertise
         - Rol: Deskundige en toegankelijke MBO-docent met focus op hybride leeromgevingen, digitale vaardigheden (zoals badges), innovatie met MIEC-data en het leggen van verbindingen tussen onderwijs en bedrijfsleven.

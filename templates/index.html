@@ -64,20 +64,25 @@
       color: #fff;
     }
 
-    /* Streaming Container */
+    /* ==========================================================================
+       Streaming Container
+       ========================================================================== */
+    /* Base Styles */
     #heygen-streaming-embed {
       z-index: 9999;
       position: fixed;
-      display: flex;              /* consistent in both states */
+      display: flex;                /* Keeps container as flex for layout consistency */
       flex-direction: column;
-      top: calc(100vh - 200px - 40px);
-      left: calc(100vw - 200px - 40px);
+      top: calc(100vh - 200px - 40px); /* Positioned 40px above bottom when minimized */
+      left: calc(100vw - 200px - 40px);/* Positioned 40px from right when minimized */
       width: 200px;
       height: 200px;
       background-color: #fff;
       border-radius: 50%;
-      border: 4px solid #fff;
+      border: 4px solid #fff;      /* White border to blend with background */
       box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.12);
+      overflow: hidden;             /* Hide overflowing contents */
+      cursor: pointer;              /* Pointer to indicate clickable for expand */
       transition:
         width 0.3s ease-in-out,
         height 0.3s ease-in-out,
@@ -86,78 +91,89 @@
         bottom 0.3s ease-in-out,
         right 0.3s ease-in-out,
         border-radius 0.3s ease-in-out;
-      overflow: hidden;
-      cursor: pointer;
     }
+
+    /* Expanded State */
     #heygen-streaming-embed.expand {
-      width: 33vw;
-      height: calc(100vh - 10px);
-      border-radius: 8px;
-      border: 5px;
+      width: 33vw;                  /* 33% of viewport width */
+      height: calc(100vh - 10px);   /* Almost full height minus margins */
+      border-radius: 8px;           /* More rectangular appearance */
+      border: 5px;                  /* Thicker border in expanded mode */
       right: auto;
       bottom: auto;
-      top: 5px;    /* 5px from top */
-      left: calc(100vw - 33vw - 5px);
-      overflow: hidden;
-      cursor: default;
+      top: 5px;                     /* 5px from top of viewport when expanded */
+      left: calc(100vw - 33vw - 5px); /* 5px from right of viewport */
+      cursor: default;              /* Default cursor when expanded */
+      overflow: hidden;             /* Hide overflowing contents */
     }
-    /* Hide overlay when not expanded */
+
+    /* Hide Overlay When Not Expanded */
     #heygen-streaming-embed:not(.expand) #overlay {
       display: none;
     }
 
-    /* Media Elements */
+
+    /* ==========================================================================
+       Media Elements
+       ========================================================================== */
+    /* Streaming Video Element */
     #mediaElement {
-      width: 100%;
-      height: 38%;
-      object-fit: cover;
+      width: 100%;                  /* Full width of container */
+      height: 38%;                  /* 38% of container height */
+      object-fit: cover;            /* Maintain aspect ratio, cover entire area */
       position: relative;
       top: 0;
       left: 0;
       display: block;
       z-index: 1;
-      border: 5px solid #d50060;
-      border-top-left-radius: 8px;
+      border: 5px solid #d50060;    /* Pink border around media */
+      border-top-left-radius: 8px;  /* Round top corners */
       border-top-right-radius: 8px;
-      border-bottom-left-radius: 0;
+      border-bottom-left-radius: 0;  /* Sharp bottom corners to meet overlay */
       border-bottom-right-radius: 0;
       box-sizing: border-box;
-      border-bottom-width: 20px;
+      border-bottom-width: 20px;     /* Extra bottom border space for design */
     }
 
-    /* Fallback Image */
+    /* Fallback Image (Displayed When No Session Active) */
     #fallbackImage {
       position: relative;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 38%;
-      object-fit: cover;
+      width: 100%;                  /* Full width of container */
+      height: 38%;                  /* 38% of container height */
+      object-fit: cover;            /* Maintain aspect ratio, cover entire area */
       z-index: 2;
-      display: block;  /* always when no session */
-      border: 5px solid #d50060;
-      border-top-left-radius: 8px;
+      display: block;               /* Shown by default when no session */
+      border: 5px solid #d50060;    /* Pink border to match streaming element */
+      border-top-left-radius: 8px;  /* Round top corners */
       border-top-right-radius: 8px;
-      border-bottom-left-radius: 0;
+      border-bottom-left-radius: 0;  /* Sharp bottom corners to meet overlay */
       border-bottom-right-radius: 0;
       box-sizing: border-box;
-      border-bottom-width: 20px;
+      border-bottom-width: 20px;     /* Extra bottom border space for design */
     }
+
+    /* Dim Fallback Image When Expanded for Better Readability */
     #heygen-streaming-embed.expand #fallbackImage {
       filter: brightness(70%);
     }
 
-    /* Controls: Start Button & Loader */
+
+    /* ==========================================================================
+       Controls: Start Button & Loader
+       ========================================================================== */
+    /* Start Session Button */
     #startSessionBtn {
       position: absolute;
-      top: 15%;
+      top: 15%;                     /* Positioned relative to container */
       left: 50%;
-      transform: translateX(-50%);
+      transform: translateX(-50%);  /* Center horizontally */
       font-size: 1rem;
-      background-color: #d50060;
+      background-color: #d50060;    /* Pink background */
       color: white;
       padding: 10px 20px;
-      border-radius: 30px;
+      border-radius: 30px;          /* Rounded pill shape */
       cursor: pointer;
       z-index: 100;
       font-weight: bold;
@@ -166,19 +182,23 @@
       box-shadow: none;
       font-family: 'Inter', sans-serif;
     }
+
+    /* Loader (Hidden by Default) */
     .loader {
       display: none;
-      border: 7px solid #f3f3f3;    /* Light grey */
-      border-top: 7px solid #d50060;
+      border: 7px solid #f3f3f3;    /* Light grey outer ring */
+      border-top: 7px solid #d50060;/* Pink top to create spinning effect */
       border-radius: 50%;
       width: 50px;
       height: 50px;
-      animation: spin 2s linear infinite;
+      animation: spin 2s linear infinite; /* Continuous rotation */
       position: absolute;
-      top: 18%;
+      top: 18%;                     /* Slightly below start button */
       left: 50%;
       z-index: 100;
     }
+
+    /* Spin Keyframes */
     @keyframes spin {
       from {
         transform: translate(-50%, -50%) rotate(0deg);
@@ -187,108 +207,114 @@
         transform: translate(-50%, -50%) rotate(360deg);
       }
     }
+
+    /* Show Loader and Hide Start Button During Loading */
     #startSessionBtn.loading {
-      display: none;
+      display: none;                /* Hide the button */
       visibility: hidden;
     }
     #startSessionBtn.loading ~ .loader {
-      display: block;
+      display: block;               /* Display loader when button has .loading class */
     }
 
-    /* Minimize Button */
+
+    /* ==========================================================================
+       Minimize / Pause Buttons
+       ========================================================================== */
+    /* Minimize Button (Hidden by Default, Shown in Expanded State) */
     #minimizeBtn {
       display: none;
       position: absolute;
-      top: 8px;
-      left: 8px;
+      top: 8px;                     /* 8px from top of container */
+      left: 8px;                    /* 8px from left of container */
       background: transparent;
       border: none;
-      color: #fff;
-      font-size: 3rem;
+      color: #fff;                  /* White icon/text */
+      font-size: 3rem;              /* Large “X” or icon */
       line-height: 1;
       cursor: pointer;
       z-index: 200;
-      text-shadow: 0 0 7px black;
+      text-shadow: 0 0 7px black;   /* Outline for visibility */
     }
-    /* Show only when expanded */
     #heygen-streaming-embed.expand #minimizeBtn {
       display: block;
     }
 
+    /* Pause Button (Hidden by Default, Shown in Expanded State) */
     #pauseBtn {
       position: absolute;
-      top: 29%;
-      left: 12px;
+      top: 29%;                     /* Positioned relative to media */
+      left: 12px;                   /* 12px from left */
       width: 28px;
       height: 28px;
       padding: 0;
-
       background: transparent;
-      color: #fff;
+      color: #fff;                  /* White icon/text */
       border: none;
       outline: none;
-      border-radius: 4px;
-
-      /* center the icon */
-      align-items: center;
+      border-radius: 4px;           /* Slight rounding */
+      display: none;                /* Hidden in base state */
+      align-items: center;          /* Center icon inside button */
       justify-content: center;
       cursor: pointer;
       font-family: 'Inter', sans-serif;
-       /* sizing of the emoji */
-      font-size: 2.2rem;
-      line-height: 28px;    /* prevents extra line-height bumps */
+      font-size: 2.2rem;            /* Emoji or icon sizing */
+      line-height: 28px;            /* Prevent extra line-height bumps */
       z-index: 10;
-      display: none;
-      text-shadow: 0 0 7px black;
+      text-shadow: 0 0 7px black;   /* Outline for visibility */
     }
-
     #heygen-streaming-embed.expand #pauseBtn {
-      display: flex;
+      display: flex;                /* Show when container is expanded */
     }
 
 
-    /* Chat Overlay */
+    /* ==========================================================================
+       Chat Overlay & Messaging
+       ========================================================================== */
+    /* Chat Overlay Container */
     #overlay {
       position: absolute;
       bottom: 0;
       width: 100%;
-      height: 62%;  /* adjust as needed */
-      background: #d50060;
-      color: #fff;
-      padding: 0 5px 5px;
+      height: 62%;                  /* 62% of container height */
+      background: #d50060;          /* Pink background */
+      color: #fff;                  /* White text */
+      padding: 0 5px 5px;           /* Inner padding (horizontal & bottom) */
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 5px;                     /* Spacing between children */
       z-index: 3;
     }
 
-    /* Chat History */
+    /* Chat History (Scrollable Area) */
     #chatHistory {
-      flex: 1;
-      overflow-y: auto;
+      flex: 1;                      /* Take available space in overlay */
+      overflow-y: auto;             /* Scroll vertically when overflow */
       font-size: 1rem;
-      background: white;
+      background: white;            /* White background for readability */
       padding: 10px 10px;
-      border-radius: 4px;
-      color: black;
+      border-radius: 4px;           /* Slight rounding */
+      color: black;                 /* Black text on white background */
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 5px;                     /* Spacing between messages */
       font-family: 'Inter', sans-serif;
-      margin-top: 0 !important;
+      margin-top: 0 !important;     /* Override any external margins */
     }
+
+    /* Individual Chat Message (User or Bot) */
     .chat-message {
-      max-width: 70%;
+      max-width: 70%;               /* Limit width for readability */
       padding: 10px 15px;
       margin: 5px;
       border-radius: 15px;
-      background-color: #d50060;
-      color: #fff;
-      align-self: flex-end;
+      background-color: #d50060;    /* Pink bubble */
+      color: #fff;                  /* White text */
+      align-self: flex-end;         /* Align to the right (user message) */
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
-
+    /* Ensure paragraphs inside .chat-message do not add extra margins */
     .chat-message p:first-child,
     .chat-message p:last-child {
       display: inline;
@@ -296,58 +322,72 @@
       padding: 0;
     }
 
-    /* Talk Section */
+
+    /* ==========================================================================
+       Talk Section (Input Area)
+       ========================================================================== */
+    /* Container for Textarea, Buttons, etc. */
     #talk-section {
       display: flex;
       align-items: center;
-      --control-height: 32px;
+      --control-height: 32px;       /* Variable for consistent control height */
     }
+
+    /* Chat Input Textarea */
     #talk-section textarea {
-      flex-grow: 1;
+      flex-grow: 1;                 /* Take up remaining horizontal space */
       padding: 5px;
-      margin-right: 5px;
+      margin-right: 5px;            /* Space between textarea and buttons */
       font-size: 1rem;
       font-family: 'Inter', sans-serif;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      color: #000;
-      resize: none;
-      overflow: hidden;
-      line-height: 1.5em;
+      border: 1px solid #ccc;       /* Light grey border */
+      border-radius: 4px;           /* Slight rounding */
+      color: #000;                  /* Black text */
+      resize: none;                 /* Prevent manual resizing */
+      overflow: hidden;             /* Prevent overflow unless needed */
+      line-height: 1.5em;           /* Comfortable line height */
       box-sizing: border-box;
-      min-height: var(--control-height);
-      max-height: 150px;
-      overflow-y: auto !important;
+      min-height: var(--control-height); /* Minimum height */
+      max-height: 150px;            /* Maximum height */
+      overflow-y: auto !important;  /* Scroll vertically if needed */
     }
+
+    /* Talk Section Buttons (Send, etc.) */
     #talk-section button {
-      height: var(--control-height);
-      background-color: #FFB6C1;
-      color: black;
+      height: var(--control-height);/* Same height as textarea */
+      background-color: #FFB6C1;    /* Light pink background */
+      color: black;                 /* Black text */
       cursor: pointer;
       font-weight: bold;
       font-family: 'Inter', sans-serif;
       border: none;
-      border-radius: 4px;
-      margin-right: 5px;
+      border-radius: 4px;           /* Slight rounding */
+      margin-right: 5px;            /* Space between buttons */
       font-size: 0.9rem;
     }
+
+    /* Talk Section Inputs (Alternate Controls if Any) */
     #talk-section input {
       flex-grow: 1;
-      border: 1px solid #ccc;
-      color: #000;
+      border: 1px solid #ccc;       /* Light grey border */
+      color: #000;                  /* Black text */
     }
 
-    /* Chat Prompt */
+
+    /* ==========================================================================
+       Chat Prompt (Minimized State Prompt)
+       ========================================================================== */
+    /* Prompt Shown When Minimized Without Active Session */
     #chatPrompt {
       position: absolute;
-      top: 80%;
+      top: 80%;                     /* Positioned near bottom of container */
       left: 50%;
       transform: translate(-50%, -50%);
       font-size: 0.7rem;
-      background-color: #d50060;
+      background-color: #d50060;    /* Pink background */
       color: white;
       padding: 7px 15px;
-      border-radius: 30px;
+      border-radius: 30px;          /* Rounded pill shape */
       cursor: pointer;
       z-index: 10;
       font-weight: bold;
@@ -355,65 +395,80 @@
       font-family: 'Inter', sans-serif;
     }
     #heygen-streaming-embed.expand #chatPrompt {
-      display: none;
+      display: none;                /* Hide when container is expanded */
     }
 
-    /* Minimized States */
-    /* Hide everything when minimized & no session */
+
+    /* ==========================================================================
+       Minimized States (When Container is Not Expanded)
+       ========================================================================== */
+    /* Hide All Children By Default When Not Expanded and No Active Session */
     #heygen-streaming-embed:not(.expand) > * {
       display: none !important;
     }
-    /* Show fallback & prompt when minimized without session */
+
+    /* Show Fallback Image & Prompt When Minimized Without Session */
     #heygen-streaming-embed:not(.expand):not(.session-active) > #fallbackImage {
       display: block !important;
-      width: 100% !important;
+      width: 100% !important;       /* Full width/height */
       height: 100% !important;
-      object-fit: cover !important;
-      border: none !important;
+      object-fit: cover !important; /* Cover container */
+      border: none !important;      /* Remove additional borders */
       border-radius: inherit !important;
     }
     #heygen-streaming-embed:not(.expand):not(.session-active) > #chatPrompt {
       display: block !important;
     }
-    /* Show media when minimized with active session */
+
+    /* Show Media Element When Minimized With Active Session */
     #heygen-streaming-embed:not(.expand).session-active > #mediaElement {
       display: block !important;
-      width: 100% !important;
+      width: 100% !important;       /* Full width/height */
       height: 100% !important;
-      object-fit: cover !important;
-      border: none !important;
+      object-fit: cover !important; /* Cover container */
+      border: none !important;      /* Remove additional borders */
       border-radius: inherit !important;
     }
 
-    /* Microphone Button */
+
+    /* ==========================================================================
+       Microphone Button
+       ========================================================================== */
     #micBtn {
       cursor: pointer;
-      display: flex;
+      display: flex;                /* Aligns icons horizontally/vertically */
       align-items: center;
       justify-content: center;
     }
+
+    /* Mic Icon (Default State) */
     #micBtn svg {
       width: 1.25rem;
       height: 1.25rem;
-      stroke: currentColor;
+      stroke: currentColor;         /* Use current text color */
     }
+
+    /* Mic vs Recording Icon Toggle */
     #micBtn #micIcon {
-      display: block;
+      display: block;               /* Show mic icon by default */
     }
     #micBtn #recIcon {
-      display: none;
+      display: none;                /* Hide recording icon by default */
     }
+
+    /* When Recording, Hide Mic Icon, Show Recording Icon */
     #micBtn.recording #micIcon {
       display: none;
     }
     #micBtn.recording #recIcon {
       display: block;
-      fill: #fff;
-      stroke: #fff;
+      fill: #fff;                   /* White fill for recording icon */
+      stroke: #fff;                 /* White stroke for recording icon */
     }
     #micBtn.recording {
-      background-color: #d50000;
+      background-color: #d50000;    /* Darker red background to indicate recording */
     }
+
   </style>
   <!-- Include LiveKit Client Library -->
   <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>

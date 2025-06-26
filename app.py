@@ -14,7 +14,7 @@ load_dotenv()
 HEYGEN_API_KEY = os.getenv("HEYGEN_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 VECTOR_STORE_ID = os.getenv("VECTOR_STORE_ID")
-vector_store_used = False
+vector_store_used = True
 
 # List of subjects to be used for vector store relevance checks
 subjects = [

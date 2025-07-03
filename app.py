@@ -15,6 +15,7 @@ HEYGEN_API_KEY = os.getenv("HEYGEN_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 VECTOR_STORE_ID = os.getenv("VECTOR_STORE_ID")
 vector_store_used = True
+use_vector_store_check = True
 
 # List of subjects to be used for vector store relevance checks
 subjects = [
@@ -118,7 +119,8 @@ def vector_store_search(query):
 
     # If no results are returned, inform the user that no info is available
     if len(response.json().get('data', [])) == 0:
-        return '\ngeef aan dat je geen informatie hebt over het de vraag en moedig de student aan om een andere vraag te stellen.'
+        no_results_instructions = '\ngeef aan dat je geen informatie hebt over het de vraag en moedig de student aan om een andere vraag te stellen.'
+        return no_results_instructions
 
     # Iterate through the results and append their content to the context
     for i, result in enumerate(response.json()['data']):
@@ -168,8 +170,9 @@ def vector_store_search_check(user_input):
         Als een vraag niet duidelijk binnen de criteria valt, antwoord dan met "nee".
         """
     )
+    vector_store_search_model = "gpt-4.1-mini-2025-04-14"
     payload = {
-        "model": "gpt-4.1-mini-2025-04-14",
+        "model": vector_store_search_model,
         "input": user_input,
         "instructions": search_check_instructions
     }
@@ -251,7 +254,7 @@ def custom_rag(user_input):
     # Check if the vector store is used for this module
     if vector_store_used:
         # Check if we need to perform a vector store search for the latest message
-        if vector_store_search_check(user_input):
+        if vector_store_search_check(user_input) or not use_vector_store_check:
             print('file search')  # Debug logging indicating a search was triggered
             query = user_input[-1]['content']  # Extract the latest message content
             # Retrieve context from the vector store
@@ -259,8 +262,9 @@ def custom_rag(user_input):
             # Append retrieved context to the user's original query
             user_input[-1]['content'] = query + '\n' + context
 
+    rag_model = "gpt-4o-mini-2024-07-18"
     payload = {
-        "model": "gpt-4o-mini-2024-07-18",
+        "model": rag_model,
         "input": user_input,
         "instructions": imce_instructions
     }

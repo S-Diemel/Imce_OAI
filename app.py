@@ -1,14 +1,29 @@
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
-import os
 import requests
 import re
+import os, sys
+import webbrowser, threading, time
+
+def resource_path(*parts):
+    """Resolve paths that work both in dev and in a PyInstaller onefile exe."""
+    base = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
+    return os.path.join(base, *parts)
 
 # Initialize the Flask application
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    static_folder=resource_path("static"),
+    template_folder=resource_path("templates")
+)
 
 # Load environment variables from a .env file
-load_dotenv()
+def load_embedded_env():
+    env_file = resource_path('.env')
+    if os.path.exists(env_file):
+        load_dotenv(dotenv_path=env_file, override=False)
+
+load_embedded_env()
 
 # Retrieve API keys and configuration from environment variables
 HEYGEN_API_KEY = os.getenv("HEYGEN_API_KEY")
@@ -307,6 +322,16 @@ def call_custom_rag():
     return jsonify(output)
 
 
+def open_browser(port):
+    time.sleep(0.6)
+    webbrowser.open(f"http://127.0.0.1:{port}")
+
+
 if __name__ == "__main__":
     # Run the Flask development server on port 8000, accessible from any host
-    app.run(host="0.0.0.0", port=8000, debug=False)
+    from waitress import serve
+    # choose an open port, or make it configurable
+    port = int(os.environ.get("PORT", "7860"))
+    print(f"Starting server on http://127.0.0.1:{port}")
+    threading.Thread(target=open_browser, args=(port,), daemon=True).start()
+    serve(app, host="127.0.0.1", port=port)

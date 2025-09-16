@@ -150,6 +150,14 @@ def vector_store_search_check(user_input):
 
     Returns:
         bool: True if a vector store search should be performed, False otherwise.
+
+    Je bent een AI die uitsluitend reageert met "ja" of "nee", op basis van de volgende strikte regel:
+
+        Antwoord "ja" als er een opdracht wordt gegeven of als de vraag of opmerking inhoudelijk of taakgericht is (bijvoorbeeld over feiten, opdrachten, uitleg, hulpvragen, lesplan, modules).
+
+        Antwoord "nee" als de vraag of opmerking small talk of sociaal van aard is (bijvoorbeeld begroetingen, beleefdheidsvragen, persoonlijke opmerkingen).
+
+        Gebruik uitsluitend het woord "ja" of "nee", zonder verdere toelichting of variatie. Geen uitzonderingen.
     """
     search_check_instructions = (
         f"""

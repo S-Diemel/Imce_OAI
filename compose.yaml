@@ -1,0 +1,11 @@
+services:
+  server:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    environment:
+      HEYGEN_API_KEY: ${HEYGEN_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      VECTOR_STORE_ID: ${VECTOR_STORE_ID}
+    command: ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "app:app"]

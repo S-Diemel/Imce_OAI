@@ -4,11 +4,25 @@ import requests
 import re
 import os, sys
 import webbrowser, threading, time
+from pathlib import Path
 
-def resource_path(*parts):
-    """Resolve paths that work both in dev and in a PyInstaller onefile exe."""
-    base = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
-    return os.path.join(base, *parts)
+
+def app_base_dir() -> Path:
+    # PyInstaller onefile: tijdelijke uitpakmap
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS)
+    # Normale .py run
+    try:
+        return Path(__file__).resolve().parent
+    except NameError:
+        # IPython/Jupyter: geen __file__; val terug op current working dir
+        return Path.cwd()
+
+BASE = app_base_dir()
+
+def resource_path(*parts) -> str:
+    return str(BASE.joinpath(*parts))
+
 
 # Initialize the Flask application
 app = Flask(

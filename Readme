@@ -8,3 +8,18 @@ There are 3 steps to run the code
 2.  install the required packages
 
 3.  run app.py
+
+How to make a .exe?
+
+first run:
+python -m venv .venv
+.venv\Scripts\activate
+pip install --upgrade pip
+pip install -r requirements.txt
+pip install pyinstaller
+
+
+then run:
+pyinstaller app.py --name MijnApp --onefile --noconsole --add-data "templates;templates" --add-data "static;static" --add-data ".env;." --collect-data certifi
+
+

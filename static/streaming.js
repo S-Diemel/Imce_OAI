@@ -14,7 +14,6 @@ const pauseBtn = document.getElementById('pauseBtn');
 // Runtime state variables used during an active session
 let sessionInfo = null;            // Stores Heygen session details once established
 let room = null;                   // LiveKit Room instance for media streaming
-let mediaStream = null;            // MediaStream used to attach tracks for playback
 let sessionToken = null;           // Authentication token from backend to interact with Heygen API
 let context = [];                  // Conversation context array for ChatGPT calls
 let heygenIsSpeaking = false;      // Flag to prevent overlapping speech tasks
@@ -136,6 +135,17 @@ function updateStartButton() {
   updatePauseButton();
 }
 
+/** Ensure <video> can actually play (autoplay/inline policies differ per browser) */
+function ensureVideoPlayable(el) {
+  if (!el) return;
+  el.playsInline = true;
+  el.autoplay = true;
+  // If you want audio right away, some browsers may block; we still try.
+  el.muted = false;
+  const p = el.play?.();
+  if (p && typeof p.catch === 'function') p.catch(() => {});
+}
+
 // ===================== TOKEN AND SESSION MANAGEMENT =====================
 
 /**
@@ -193,7 +203,6 @@ async function createNewSession() {
       }),
     });
 
-    // If the HTTP status is not in the 200–299 range, throw an error
     if (!response.ok) {
       throw new Error("Failed to create new session");
     }
@@ -231,43 +240,37 @@ async function createNewSession() {
         const eventData = JSON.parse(textData);
 
         if (eventData.type === "avatar_stop_talking") {
-          // Re-enable the talk button and microphone button once avatar stops speaking
           document.querySelector("#talkBtn").disabled = false;
           micBtn.disabled = false;
           heygenIsSpeaking = false;
         }
       } catch (err) {
         console.error("Error parsing incoming data:", err);
-        // In case of parse errors, also ensure controls are re-enabled
         document.querySelector("#talkBtn").disabled = false;
         micBtn.disabled = false;
         heygenIsSpeaking = false;
       }
     });
 
-    // Create an empty MediaStream; tracks will be added when subscribed
-    mediaStream = new MediaStream();
-
-    /**
-     * When a new track is subscribed (audio/video), add it to the media stream.
-     * Once both video and audio tracks are present, attach the stream to the media element.
-     */
-    room.on(LivekitClient.RoomEvent.TrackSubscribed, (track) => {
+    // Attach/detach tracks directly to the media element.
+    // Do NOT build your own MediaStream; LiveKit manages track swaps/layer switches.
+    room.on(LivekitClient.RoomEvent.TrackSubscribed, (track /*, publication, participant */) => {
       if (track.kind === "video" || track.kind === "audio") {
-        mediaStream.addTrack(track.mediaStreamTrack);
-
-        if (
-          mediaStream.getVideoTracks().length &&
-          mediaStream.getAudioTracks().length
-        ) {
-          mediaElement.srcObject = mediaStream;
+        try {
+          track.attach(mediaElement);
+          ensureVideoPlayable(mediaElement);
+        } catch (e) {
+          console.error("Error attaching track", e);
         }
       }
     });
 
-    // Remove tracks from the media stream when unsubscribed
-    room.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track) => {
-      mediaStream.removeTrack(track.mediaStreamTrack);
+    room.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track /*, publication, participant */) => {
+      try {
+        track.detach(mediaElement);
+      } catch (e) {
+        console.error("Error detaching track", e);
+      }
     });
 
     /**
@@ -279,16 +282,17 @@ async function createNewSession() {
       document.querySelector("#talkBtn").disabled = false;
       micBtn.disabled = false;
       heygenIsSpeaking = false;
+      try {
+        room?.remoteParticipants?.forEach((p) => {
+          p.tracks?.forEach((pub) => pub.track?.detach(mediaElement));
+        });
+      } catch (e) {
+        console.warn("Detach on disconnect warning:", e);
+      }
       await closeSession();
       updateFallbackImage();
       updateStartButton();
     });
-
-    // Finalize connection to the LiveKit server using provided session details
-    await room.prepareConnection(
-      sessionInfo.url,
-      sessionInfo.access_token
-    );
 
     console.log("Session created successfully");
   } catch (err) {
@@ -330,6 +334,9 @@ async function startStreamingSession() {
     updatePauseButton();
     console.log("Streaming started successfully");
     streamingEmbed.classList.add('session-active');
+
+    // Make sure video element is visible & playable so adaptiveStream doesn't pause it
+    ensureVideoPlayable(mediaElement);
   } catch (err) {
     console.error("Error starting streaming session", err);
   }
@@ -421,7 +428,7 @@ async function sendText(text, taskType = "repeat") {
   console.log(text_OAI);
 
   // Remove emojis and limit to 10,000 characters
-  const sanitized = text_OAI
+  const sanitized = (text_OAI || "")
     .replace(/[😀-🛿]/gu, '')   // Strip out emoji characters
     .substring(0, 10000)       // Enforce maximum length
     .trim();
@@ -491,7 +498,7 @@ async function sendText(text, taskType = "repeat") {
  * Steps:
  *   1. Calls Heygen API to stop the streaming task.
  *   2. Disconnects from LiveKit room if open.
- *   3. Clears media element’s source, resets state variables, and updates UI.
+ *   3. Clears media element’s attachments, resets state variables, and updates UI.
  *
  * @returns {Promise<void>}
  */
@@ -509,14 +516,32 @@ async function closeSession() {
       body: JSON.stringify({ session_id: sessionInfo.session_id })
     });
 
-    // Close any open LiveKit room
-    if (room) room.disconnect();
+    // Detach any attached remote tracks from the media element
+    try {
+      room?.remoteParticipants?.forEach((p) => {
+        p.tracks?.forEach((pub) => pub.track?.detach(mediaElement));
+      });
+    } catch (e) {
+      console.warn("Detach warning during close:", e);
+    }
 
-    // Clear media and session state
-    mediaElement.srcObject = null;
+    // Close any open LiveKit room
+    if (room) {
+      try { room.disconnect(); } catch (e) {}
+    }
+
+    // Clear the media element (no srcObject used anymore)
+    try {
+      mediaElement.removeAttribute('srcObject');
+      mediaElement.removeAttribute('src');
+      mediaElement.load?.();
+    } catch (e) {
+      // ignore
+    }
+
+    // Clear session state
     sessionInfo = null;
     room = null;
-    mediaStream = null;
     sessionToken = null;
     heygenIsSpeaking = false;
 

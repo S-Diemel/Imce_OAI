@@ -20,7 +20,7 @@ let heygenIsSpeaking = false;      // Flag to prevent overlapping speech tasks
 let recognition;                   // SpeechRecognition instance for microphone input
 
 // Configuration constants for the avatar and API
-const AVATAR_ID = "3b8a02792ccb4d52b7758f97bd133f05";
+const AVATAR_ID = "3110b2f1dc3246a39a76a08354d005bf";
 const API_CONFIG = {
   serverUrl: "https://api.heygen.com"
 };

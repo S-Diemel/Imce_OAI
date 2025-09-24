@@ -20,6 +20,6 @@ pip install pyinstaller
 
 
 then run:
-pyinstaller app.py --name MijnApp --onefile --noconsole --add-data "templates;templates" --add-data "static;static" --add-data ".env;." --collect-data certifi
+pyinstaller app.py --name Sem_van_Beethoven --onefile --noconsole --add-data "templates;templates" --add-data "static;static" --add-data ".env;." --collect-data certifi
 
 
